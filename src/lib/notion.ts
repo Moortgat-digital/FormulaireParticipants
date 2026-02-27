@@ -1,6 +1,9 @@
 import { Client } from "@notionhq/client";
 
-const notion = new Client({ auth: process.env.NOTION_API_KEY });
+const notion = new Client({
+  auth: process.env.NOTION_API_KEY,
+  notionVersion: "2022-06-28",
+});
 
 const DATABASE_ID = process.env.NOTION_DATABASE_ID!;
 
@@ -15,7 +18,6 @@ export async function getPageTitle(pageId: string): Promise<string> {
   try {
     const page = await notion.pages.retrieve({ page_id: pageId });
     if ("properties" in page) {
-      // Find the title property
       for (const prop of Object.values(page.properties)) {
         if (prop.type === "title" && prop.title.length > 0) {
           return prop.title.map((t) => t.plain_text).join("");
@@ -33,7 +35,6 @@ export async function createParticipantPage(
   groupId: string,
   submittedBy: string
 ) {
-  // Build properties, conditionally including "Soumis par"
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const properties: Record<string, any> = {
     Nom: {
@@ -48,11 +49,8 @@ export async function createParticipantPage(
     Entreprise: {
       rich_text: [{ text: { content: participant.entreprise } }],
     },
-    Groupe: {
+    "📂 Groupe": {
       relation: [{ id: groupId }],
-    },
-    "Date de soumission": {
-      date: { start: new Date().toISOString().split("T")[0] },
     },
   };
 
