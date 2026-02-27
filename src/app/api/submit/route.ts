@@ -49,13 +49,16 @@ export async function POST(request: Request) {
     // Create pages in Notion (sequential to respect rate limits)
     let created = 0;
     let failed = 0;
+    let lastError = "";
 
     for (const participant of body.participants) {
       try {
         await createParticipantPage(participant, body.groupId, body.submittedBy);
         created++;
-      } catch (err) {
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err);
         console.error("Erreur Notion pour", participant.email, err);
+        lastError = errMsg;
         failed++;
       }
 
@@ -78,7 +81,7 @@ export async function POST(request: Request) {
       return NextResponse.json<SubmitResponse>(
         {
           success: false,
-          message: "Erreur lors de l'inscription. Veuillez réessayer.",
+          message: `Erreur lors de l'inscription : ${lastError}`,
           created,
           failed,
         },
