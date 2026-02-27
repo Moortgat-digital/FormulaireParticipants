@@ -11,6 +11,23 @@ interface ParticipantData {
   entreprise: string;
 }
 
+export async function getPageTitle(pageId: string): Promise<string> {
+  try {
+    const page = await notion.pages.retrieve({ page_id: pageId });
+    if ("properties" in page) {
+      // Find the title property
+      for (const prop of Object.values(page.properties)) {
+        if (prop.type === "title" && prop.title.length > 0) {
+          return prop.title.map((t) => t.plain_text).join("");
+        }
+      }
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
 export async function createParticipantPage(
   participant: ParticipantData,
   groupId: string,
