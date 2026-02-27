@@ -8,11 +8,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Content-Security-Policy",
-            value: "frame-ancestors 'self' https://*.softr.app https://*.softr.io",
-          },
-          {
-            key: "X-Frame-Options",
-            value: "ALLOWALL",
+            value: "frame-ancestors *",
           },
         ],
       },
