@@ -15,8 +15,9 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function createEmptyParticipant(): Participant {
   return {
     id: crypto.randomUUID(),
-    nom: "",
     prenom: "",
+    nom: "",
+    entreprise: "",
     email: "",
   };
 }
@@ -81,19 +82,21 @@ export default function ParticipantForm({
       const updated = [...prev];
       for (let i = 0; i < rows.length; i++) {
         const targetIndex = startIndex + i;
-        const [nom = "", prenom = "", email = ""] = rows[i];
+        const [prenom = "", nom = "", entreprise = "", email = ""] = rows[i];
         if (targetIndex < updated.length) {
           updated[targetIndex] = {
             ...updated[targetIndex],
-            nom: nom.trim(),
             prenom: prenom.trim(),
+            nom: nom.trim(),
+            entreprise: entreprise.trim(),
             email: email.trim(),
           };
         } else {
           updated.push({
             id: crypto.randomUUID(),
-            nom: nom.trim(),
             prenom: prenom.trim(),
+            nom: nom.trim(),
+            entreprise: entreprise.trim(),
             email: email.trim(),
           });
         }
@@ -126,8 +129,9 @@ export default function ParticipantForm({
     const newErrors: (Partial<Record<keyof Participant, string>> | null)[] =
       participants.map((p) => {
         const errs: Partial<Record<keyof Participant, string>> = {};
-        if (!p.nom.trim()) errs.nom = "Requis";
         if (!p.prenom.trim()) errs.prenom = "Requis";
+        if (!p.nom.trim()) errs.nom = "Requis";
+        if (!p.entreprise.trim()) errs.entreprise = "Requis";
         if (!p.email.trim()) errs.email = "Requis";
         else if (!EMAIL_REGEX.test(p.email)) errs.email = "E-mail invalide";
         return Object.keys(errs).length > 0 ? errs : null;
@@ -145,9 +149,10 @@ export default function ParticipantForm({
     setResult(null);
 
     const payload: SubmitPayload = {
-      participants: participants.map(({ nom, prenom, email }) => ({
-        nom: nom.trim(),
+      participants: participants.map(({ nom, prenom, entreprise, email }) => ({
         prenom: prenom.trim(),
+        nom: nom.trim(),
+        entreprise: entreprise.trim(),
         email: email.trim().toLowerCase(),
       })),
       groupId: selectedGroupId,
@@ -316,8 +321,8 @@ export default function ParticipantForm({
 
               {/* Paste hint */}
               <p className="text-xs text-gray-400">
-                Astuce : copiez vos colonnes Nom, Prénom, E-mail depuis Excel et
-                collez dans le champ Nom pour remplir automatiquement.
+                Astuce : copiez vos colonnes Prénom, Nom, Entreprise/Entité, E-mail depuis Excel et
+                collez dans le champ Prénom pour remplir automatiquement.
               </p>
 
               {/* Participant rows */}

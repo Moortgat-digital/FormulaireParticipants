@@ -1,7 +1,8 @@
 export interface Participant {
   id: string;
-  nom: string;
   prenom: string;
+  nom: string;
+  entreprise: string;
   email: string;
 }
 

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     // Validate each participant
     for (let i = 0; i < body.participants.length; i++) {
       const p = body.participants[i];
-      if (!p.nom?.trim() || !p.prenom?.trim() || !p.email?.trim()) {
+      if (!p.nom?.trim() || !p.prenom?.trim() || !p.entreprise?.trim() || !p.email?.trim()) {
         return NextResponse.json<SubmitResponse>(
           {
             success: false,

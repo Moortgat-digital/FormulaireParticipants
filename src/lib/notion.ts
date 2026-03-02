@@ -8,10 +8,10 @@ const DATABASE_ID = process.env.NOTION_DATABASE_ID!;
 const GROUPS_DATABASE_ID = "2292b5dd-fdb8-81c3-a1a9-000b30c94de1";
 
 interface ParticipantData {
-  nom: string;
   prenom: string;
+  nom: string;
+  entreprise: string;
   email: string;
-  entreprise?: string;
 }
 
 export async function getPageTitle(pageId: string): Promise<string> {
@@ -88,7 +88,7 @@ export async function createParticipantPage(
       email: participant.email,
     },
     Entreprise: {
-      rich_text: [{ text: { content: participant.entreprise ?? "" } }],
+      rich_text: [{ text: { content: participant.entreprise } }],
     },
     "📂 Groupe": {
       relation: [{ id: groupId }],

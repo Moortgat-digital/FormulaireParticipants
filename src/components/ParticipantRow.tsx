@@ -22,8 +22,9 @@ export default function ParticipantRow({
   errors,
 }: ParticipantRowProps) {
   const fields: { key: keyof Participant; label: string; type: string; placeholder: string }[] = [
-    { key: "nom", label: "Nom", type: "text", placeholder: "Dupont" },
     { key: "prenom", label: "Prénom", type: "text", placeholder: "Jean" },
+    { key: "nom", label: "Nom", type: "text", placeholder: "Dupont" },
+    { key: "entreprise", label: "Entreprise/Entité", type: "text", placeholder: "Société ABC" },
     { key: "email", label: "E-mail", type: "email", placeholder: "jean.dupont@exemple.com" },
   ];
 
@@ -51,7 +52,7 @@ export default function ParticipantRow({
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
         {fields.map(({ key, label, type, placeholder }) => (
           <div key={key}>
             <label
@@ -66,7 +67,7 @@ export default function ParticipantRow({
               value={participant[key]}
               onChange={(e) => onChange(index, key, e.target.value)}
               onPaste={
-                key === "nom"
+                key === "prenom"
                   ? (e) => {
                       const text = e.clipboardData.getData("text/plain");
                       if (text.includes("\t")) {
