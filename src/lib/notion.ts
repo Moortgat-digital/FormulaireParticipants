@@ -2,7 +2,6 @@ import { Client } from "@notionhq/client";
 
 const notion = new Client({
   auth: process.env.NOTION_API_KEY,
-  notionVersion: "2022-06-28",
 });
 
 const DATABASE_ID = process.env.NOTION_DATABASE_ID!;
