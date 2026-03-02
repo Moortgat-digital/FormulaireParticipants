@@ -3,7 +3,6 @@ import { Client } from "@notionhq/client";
 
 const notion = new Client({
   auth: process.env.NOTION_API_KEY,
-  notionVersion: "2022-06-28",
 });
 
 const GROUPS_DATABASE_ID = "2292b5ddfdb8809392d8d23fceb24d9a";
