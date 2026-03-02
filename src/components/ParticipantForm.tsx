@@ -124,77 +124,92 @@ export default function ParticipantForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-4 p-4">
-      {/* Group header */}
-      <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3">
-        <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">
-          Groupe
+    <div className="mx-auto max-w-5xl p-4">
+      {/* Title section - Softr style */}
+      <div className="mb-6">
+        <h2 className="text-xl font-bold text-gray-900">
+          Gestion administrative des participants
+        </h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Renseignez les informations des participants pour les inscrire à ce groupe.
         </p>
-        <p className="text-lg font-semibold text-blue-900">{groupName}</p>
       </div>
 
-      {/* Participant rows */}
-      <div className="space-y-3">
-        {participants.map((participant, index) => (
-          <ParticipantRow
-            key={participant.id}
-            participant={participant}
-            index={index}
-            onChange={handleChange}
-            onRemove={handleRemove}
-            canRemove={participants.length > 1}
-            errors={errors[index] || null}
-          />
-        ))}
-      </div>
+      {/* Card container - Softr style */}
+      <form onSubmit={handleSubmit} className="rounded-lg border border-gray-200 bg-white">
+        <div className="space-y-4 p-6">
+          {/* Group header */}
+          <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3">
+            <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">
+              Groupe
+            </p>
+            <p className="text-lg font-semibold text-blue-900">{groupName}</p>
+          </div>
 
-      {/* Add participant button */}
-      <button
-        type="button"
-        onClick={handleAddRow}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-3 text-sm font-medium text-gray-500 transition-colors hover:border-blue-400 hover:text-blue-600"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-          <path
-            fillRule="evenodd"
-            d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-            clipRule="evenodd"
-          />
-        </svg>
-        Ajouter un participant
-      </button>
+          {/* Participant rows */}
+          <div className="space-y-3">
+            {participants.map((participant, index) => (
+              <ParticipantRow
+                key={participant.id}
+                participant={participant}
+                index={index}
+                onChange={handleChange}
+                onRemove={handleRemove}
+                canRemove={participants.length > 1}
+                errors={errors[index] || null}
+              />
+            ))}
+          </div>
 
-      {/* Result message */}
-      {result && (
-        <div
-          className={`rounded-lg px-4 py-3 text-sm font-medium ${
-            result.success
-              ? "bg-green-50 border border-green-200 text-green-800"
-              : "bg-red-50 border border-red-200 text-red-800"
-          }`}
-        >
-          {result.message}
-        </div>
-      )}
-
-      {/* Submit button */}
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-400"
-      >
-        {isSubmitting ? (
-          <span className="flex items-center justify-center gap-2">
-            <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          {/* Add participant button */}
+          <button
+            type="button"
+            onClick={handleAddRow}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-3 text-sm font-medium text-gray-500 transition-colors hover:border-blue-400 hover:text-blue-600"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fillRule="evenodd"
+                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                clipRule="evenodd"
+              />
             </svg>
-            Envoi en cours...
-          </span>
-        ) : (
-          `Soumettre ${participants.length > 1 ? `les ${participants.length} inscriptions` : "l'inscription"}`
-        )}
-      </button>
-    </form>
+            Ajouter un participant
+          </button>
+
+          {/* Result message */}
+          {result && (
+            <div
+              className={`rounded-lg px-4 py-3 text-sm font-medium ${
+                result.success
+                  ? "bg-green-50 border border-green-200 text-green-800"
+                  : "bg-red-50 border border-red-200 text-red-800"
+              }`}
+            >
+              {result.message}
+            </div>
+          )}
+
+          {/* Submit button */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-400"
+          >
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Envoi en cours...
+              </span>
+            ) : (
+              `Soumettre ${participants.length > 1 ? `les ${participants.length} inscriptions` : "l'inscription"}`
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
