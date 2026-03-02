@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const ds = await notion.dataSources.retrieve({
       data_source_id: GROUPS_DATABASE_ID,
     });
-    results.dataSourceRetrieve = { ok: true, id: ds.id, type: ds.type };
+    results.dataSourceRetrieve = { ok: true, id: ds.id };
   } catch (err) {
     results.dataSourceRetrieve = {
       ok: false,
