@@ -5,7 +5,7 @@ const notion = new Client({
   auth: process.env.NOTION_API_KEY,
 });
 
-const GROUPS_DATABASE_ID = "2292b5ddfdb8809392d8d23fceb24d9a";
+const GROUPS_DATABASE_ID = "2292b5dd-fdb8-81c3-a1a9-000b30c94de1";
 
 export async function GET(request: NextRequest) {
   const formationId = request.nextUrl.searchParams.get("formationId") || "";
