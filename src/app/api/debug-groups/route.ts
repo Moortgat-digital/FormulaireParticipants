@@ -12,25 +12,27 @@ export async function GET(request: NextRequest) {
   const formationId = request.nextUrl.searchParams.get("formationId") || "";
 
   try {
-    // Step 1: List all properties of the Groups database
-    const db = await notion.databases.retrieve({
+    // Step 1: List properties of the Groups database
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = (await notion.databases.retrieve({
       database_id: GROUPS_DATABASE_ID,
-    });
-    const propertyNames = Object.keys(db.properties);
-    const propertyDetails = Object.entries(db.properties).map(
-      ([name, prop]) => ({
-        name,
-        type: prop.type,
-      })
-    );
+    })) as any;
 
-    // Step 2: Try querying without filter to see if we get any results
+    const propertyNames = db.properties ? Object.keys(db.properties) : [];
+    const propertyDetails = db.properties
+      ? Object.entries(db.properties).map(([name, prop]: [string, any]) => ({
+          name,
+          type: prop.type,
+        }))
+      : [];
+
+    // Step 2: Query without filter
     const allResults = await notion.dataSources.query({
       data_source_id: GROUPS_DATABASE_ID,
       page_size: 5,
     });
 
-    // Step 3: Try with filter if formationId provided
+    // Step 3: Query with filter if formationId provided
     let filteredResults = null;
     let filterError = null;
     if (formationId) {
@@ -62,9 +64,12 @@ export async function GET(request: NextRequest) {
       filterError,
     });
   } catch (err) {
-    return NextResponse.json({
-      error: err instanceof Error ? err.message : String(err),
-      formationId,
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: err instanceof Error ? err.message : String(err),
+        formationId,
+      },
+      { status: 500 }
+    );
   }
 }
