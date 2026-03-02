@@ -3,7 +3,11 @@ export interface Participant {
   nom: string;
   prenom: string;
   email: string;
-  entreprise: string;
+}
+
+export interface Group {
+  id: string;
+  name: string;
 }
 
 export interface SubmitPayload {

@@ -6,12 +6,13 @@ const notion = new Client({
 });
 
 const DATABASE_ID = process.env.NOTION_DATABASE_ID!;
+const GROUPS_DATABASE_ID = "2292b5ddfdb8809392d8d23fceb24d9a";
 
 interface ParticipantData {
   nom: string;
   prenom: string;
   email: string;
-  entreprise: string;
+  entreprise?: string;
 }
 
 export async function getPageTitle(pageId: string): Promise<string> {
@@ -27,6 +28,47 @@ export async function getPageTitle(pageId: string): Promise<string> {
     return "";
   } catch {
     return "";
+  }
+}
+
+export async function getGroupsByFormation(
+  formationId: string
+): Promise<{ id: string; name: string }[]> {
+  try {
+    const response = await notion.dataSources.query({
+      data_source_id: GROUPS_DATABASE_ID,
+      filter: {
+        property: "📚 Formation",
+        relation: {
+          contains: formationId,
+        },
+      },
+    });
+
+    return response.results
+      .filter(
+        (page): page is Extract<typeof page, { properties: unknown }> =>
+          "properties" in page
+      )
+      .map((page) => {
+        let name = "";
+        for (const prop of Object.values(page.properties)) {
+          if (
+            (prop as { type: string }).type === "title" &&
+            (prop as { title: { plain_text: string }[] }).title.length > 0
+          ) {
+            name = (prop as { title: { plain_text: string }[] }).title
+              .map((t) => t.plain_text)
+              .join("");
+            break;
+          }
+        }
+        return { id: page.id, name };
+      })
+      .filter((g) => g.name !== "");
+  } catch (err) {
+    console.error("Error fetching groups:", err);
+    return [];
   }
 }
 
@@ -47,7 +89,7 @@ export async function createParticipantPage(
       email: participant.email,
     },
     Entreprise: {
-      rich_text: [{ text: { content: participant.entreprise } }],
+      rich_text: [{ text: { content: participant.entreprise ?? "" } }],
     },
     "📂 Groupe": {
       relation: [{ id: groupId }],

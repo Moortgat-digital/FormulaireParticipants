@@ -7,6 +7,7 @@ interface ParticipantRowProps {
   index: number;
   onChange: (index: number, field: keyof Participant, value: string) => void;
   onRemove: (index: number) => void;
+  onPaste: (index: number, data: string[][]) => void;
   canRemove: boolean;
   errors: Partial<Record<keyof Participant, string>> | null;
 }
@@ -16,6 +17,7 @@ export default function ParticipantRow({
   index,
   onChange,
   onRemove,
+  onPaste,
   canRemove,
   errors,
 }: ParticipantRowProps) {
@@ -23,7 +25,6 @@ export default function ParticipantRow({
     { key: "nom", label: "Nom", type: "text", placeholder: "Dupont" },
     { key: "prenom", label: "Prénom", type: "text", placeholder: "Jean" },
     { key: "email", label: "E-mail", type: "email", placeholder: "jean.dupont@exemple.com" },
-    { key: "entreprise", label: "Entreprise", type: "text", placeholder: "Société SA" },
   ];
 
   return (
@@ -50,7 +51,7 @@ export default function ParticipantRow({
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {fields.map(({ key, label, type, placeholder }) => (
           <div key={key}>
             <label
@@ -64,6 +65,21 @@ export default function ParticipantRow({
               type={type}
               value={participant[key]}
               onChange={(e) => onChange(index, key, e.target.value)}
+              onPaste={
+                key === "nom"
+                  ? (e) => {
+                      const text = e.clipboardData.getData("text/plain");
+                      if (text.includes("\t")) {
+                        e.preventDefault();
+                        const rows = text
+                          .split(/\r?\n/)
+                          .filter((line) => line.trim() !== "")
+                          .map((line) => line.split("\t"));
+                        onPaste(index, rows);
+                      }
+                    }
+                  : undefined
+              }
               placeholder={placeholder}
               className={`w-full rounded-md border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors?.[key]

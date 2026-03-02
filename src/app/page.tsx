@@ -1,5 +1,5 @@
 import ParticipantForm from "@/components/ParticipantForm";
-import { getPageTitle } from "@/lib/notion";
+import { getPageTitle, getGroupsByFormation } from "@/lib/notion";
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -8,12 +8,12 @@ interface PageProps {
 export default async function Page({ searchParams }: PageProps) {
   const params = await searchParams;
 
-  const groupId = typeof params.group_id === "string" ? params.group_id : "";
+  const recordId = typeof params.recordId === "string" ? params.recordId : "";
   const submittedBy = typeof params.submitted_by === "string"
     ? params.submitted_by
     : "";
 
-  if (!groupId) {
+  if (!recordId) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="rounded-lg bg-red-50 border border-red-200 px-6 py-4 text-center">
@@ -21,27 +21,23 @@ export default async function Page({ searchParams }: PageProps) {
             Lien invalide
           </p>
           <p className="mt-1 text-xs text-red-600">
-            Le paramètre <code>group_id</code> est requis dans l&apos;URL.
+            Le paramètre <code>recordId</code> est requis dans l&apos;URL.
           </p>
         </div>
       </div>
     );
   }
 
-  // Use group_name from URL if provided, otherwise fetch from Notion
-  let groupName = typeof params.group_name === "string"
-    ? decodeURIComponent(params.group_name)
-    : "";
-
-  if (!groupName) {
-    groupName = await getPageTitle(groupId);
-  }
+  const [formationName, groups] = await Promise.all([
+    getPageTitle(recordId),
+    getGroupsByFormation(recordId),
+  ]);
 
   return (
     <main className="min-h-screen">
       <ParticipantForm
-        groupId={groupId}
-        groupName={groupName || "Groupe"}
+        formationName={formationName || "Formation"}
+        groups={groups}
         submittedBy={submittedBy}
       />
     </main>
