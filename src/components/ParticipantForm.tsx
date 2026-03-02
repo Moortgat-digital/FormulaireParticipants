@@ -124,10 +124,10 @@ export default function ParticipantForm({
   }
 
   return (
-    <div className="mx-auto max-w-5xl p-4">
+    <div className="mx-auto max-w-5xl px-4">
       {/* Title section - Softr style */}
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-900">
+        <h2 className="text-2xl font-bold text-gray-900">
           Gestion administrative des participants
         </h2>
         <p className="mt-1 text-sm text-gray-500">

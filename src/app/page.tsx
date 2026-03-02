@@ -38,7 +38,7 @@ export default async function Page({ searchParams }: PageProps) {
   }
 
   return (
-    <main className="min-h-screen py-6">
+    <main className="min-h-screen">
       <ParticipantForm
         groupId={groupId}
         groupName={groupName || "Groupe"}
