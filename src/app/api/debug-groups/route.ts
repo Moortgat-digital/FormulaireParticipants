@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   // Step 0: Search for databases accessible to this integration
   try {
     const search = await notion.search({
-      filter: { value: "database", property: "object" },
+      filter: { value: "data_source", property: "object" },
       page_size: 20,
     });
     results.searchDatabases = {
