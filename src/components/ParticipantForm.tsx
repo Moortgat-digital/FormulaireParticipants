@@ -190,9 +190,10 @@ export default function ParticipantForm({
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4">
+    <div className="mx-auto max-w-7xl px-4">
       {/* Title */}
       <div className="mb-6">
+        <p className="mb-1 text-xs font-medium text-orange-600">[Test - visible admin]</p>
         <h2
           className="text-2xl font-semibold text-gray-900"
           style={{ fontFamily: "var(--font-dm-sans), sans-serif" }}
