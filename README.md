@@ -119,11 +119,17 @@ Le formulaire repose sur la structure de données Notion alimentée depuis BSoft
 
 Si l'un de ces éléments est manquant, le formulaire affichera "Aucun groupe disponible pour cette formation".
 
+### Journées non créées (dates non définies)
+
+Si la date d'une journée n'est pas encore définie au moment de la saisie dans BSoft, la journée ne peut pas être créée. Par conséquent, les automatisations en aval ne peuvent pas opérer.
+
+> **Note** : la notion de "journée" n'a pas d'impact direct sur ce formulaire (qui rattache un participant à un **Groupe**). En revanche, elle est essentielle pour les automatisations qui en découlent, car dans BSoft un participant est relié à une **journée** (et non à un groupe, contrairement à la logique Moortgat dans Notion).
+
 ### Cas d'exclusion
 
 Certains clients ou dispositifs ne sont pas compatibles avec ce process d'inscription :
 
-- **Covéa** (et cas similaires) : le process d'inscription par formulaire ne peut pas être appliqué. Les inscriptions pour ces clients doivent continuer à être gérées selon le process existant (saisie manuelle, fichier d'import, etc.)
+- **Client dans l'assurance** (et cas similaires) : le process ne peut pas être appliqué. Les journées sont renseignées au compte-goutte dans BSoft, car la donnée cliente est transmise progressivement et doit figurer par ailleurs (certificat). De plus, ce type de client ne respecte pas la nomenclature d'utilisation établie dans BSoft. Les inscriptions doivent continuer à être gérées selon le process existant (saisie manuelle, fichier d'import, etc.)
 
 ### Autres limites
 
