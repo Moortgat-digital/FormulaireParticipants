@@ -73,6 +73,7 @@ export async function getGroupsByFormation(
 
 export async function createParticipantPage(
   participant: ParticipantData,
+  formationId: string,
   groupId: string,
   submittedBy: string
 ) {
@@ -92,6 +93,12 @@ export async function createParticipantPage(
     },
     "📂 Groupe": {
       relation: [{ id: groupId }],
+    },
+    "📚 Formation": {
+      relation: [{ id: formationId }],
+    },
+    Statut: {
+      select: { name: "À traiter" },
     },
   };
 

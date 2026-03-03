@@ -9,6 +9,13 @@ export async function POST(request: Request) {
     const body: SubmitPayload = await request.json();
 
     // Validate payload
+    if (!body.formationId || typeof body.formationId !== "string") {
+      return NextResponse.json<SubmitResponse>(
+        { success: false, message: "ID de la formation manquant." },
+        { status: 400 }
+      );
+    }
+
     if (!body.groupId || typeof body.groupId !== "string") {
       return NextResponse.json<SubmitResponse>(
         { success: false, message: "ID du groupe manquant." },
@@ -53,7 +60,7 @@ export async function POST(request: Request) {
 
     for (const participant of body.participants) {
       try {
-        await createParticipantPage(participant, body.groupId, body.submittedBy);
+        await createParticipantPage(participant, body.formationId, body.groupId, body.submittedBy);
         created++;
       } catch (err: unknown) {
         const errMsg = err instanceof Error ? err.message : String(err);

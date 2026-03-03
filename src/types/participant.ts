@@ -13,6 +13,7 @@ export interface Group {
 
 export interface SubmitPayload {
   participants: Omit<Participant, "id">[];
+  formationId: string;
   groupId: string;
   groupName: string;
   submittedBy: string;

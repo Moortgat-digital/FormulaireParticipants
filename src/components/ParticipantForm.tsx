@@ -5,6 +5,7 @@ import type { Participant, Group, SubmitPayload, SubmitResponse } from "@/types/
 import ParticipantRow from "./ParticipantRow";
 
 interface ParticipantFormProps {
+  formationId: string;
   formationName: string;
   groups: Group[];
   submittedBy: string;
@@ -23,6 +24,7 @@ function createEmptyParticipant(): Participant {
 }
 
 export default function ParticipantForm({
+  formationId,
   formationName,
   groups,
   submittedBy,
@@ -155,6 +157,7 @@ export default function ParticipantForm({
         entreprise: entreprise.trim(),
         email: email.trim().toLowerCase(),
       })),
+      formationId,
       groupId: selectedGroupId,
       groupName: selectedGroupName,
       submittedBy,

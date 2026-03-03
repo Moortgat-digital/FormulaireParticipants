@@ -36,6 +36,7 @@ export default async function Page({ searchParams }: PageProps) {
   return (
     <main className="min-h-screen">
       <ParticipantForm
+        formationId={recordId}
         formationName={formationName || "Formation"}
         groups={groups}
         submittedBy={submittedBy}
