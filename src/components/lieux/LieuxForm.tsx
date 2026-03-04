@@ -6,7 +6,6 @@ import type {
   LieuxFormState,
   LieuxAction,
   LieuData,
-  EMPTY_LIEU as EmptyLieuType,
   JourneePatchPayload,
   GroupPatchPayload,
   SavePayload,
@@ -126,7 +125,8 @@ function initializeState(
   return {
     formationId,
     formationNom,
-    fillStrategy: "all-same",
+    // Single group → go straight to per-group (shows GroupCard with sub-question)
+    fillStrategy: groups.length <= 1 ? "per-group" : "all-same",
     globalLieu: { ...EMPTY_LIEU },
     groups: groups.map((g) => ({
       groupId: g.id,
@@ -156,16 +156,14 @@ function initializeState(
 }
 
 // ---- Validation ----
+// Mode is set by Notion (not the client), so we only validate address fields.
 
 function validateLieu(lieu: LieuData): FieldErrors | null {
   const errs: FieldErrors = {};
-  if (!lieu.mode) errs.mode = "Requis";
-  if (lieu.mode !== "Distanciel" && lieu.mode) {
-    if (!lieu.nom.trim()) errs.nom = "Requis";
-    if (!lieu.adresse.trim()) errs.adresse = "Requis";
-    if (!lieu.ville.trim()) errs.ville = "Requis";
-    if (!lieu.codePostal.trim()) errs.codePostal = "Requis";
-  }
+  if (!lieu.nom.trim()) errs.nom = "Requis";
+  if (!lieu.adresse.trim()) errs.adresse = "Requis";
+  if (!lieu.ville.trim()) errs.ville = "Requis";
+  if (!lieu.codePostal.trim()) errs.codePostal = "Requis";
   return Object.keys(errs).length > 0 ? errs : null;
 }
 
@@ -203,12 +201,19 @@ function buildPayload(state: LieuxFormState, groups: GroupeSession[]): SavePaylo
       effectiveGroupLieu = gState.lieuData;
     }
 
-    // Build group label
     let hasMultipleLieux = false;
     const resolvedJournees: LieuData[] = [];
 
     for (let i = 0; i < gState.journees.length; i++) {
       const jState = gState.journees[i];
+      const journeeData = group.journees[i];
+
+      // Skip Distanciel journées — don't overwrite their data
+      if (journeeData?.mode === "Distanciel") {
+        resolvedJournees.push(EMPTY_LIEU);
+        continue;
+      }
+
       let effectiveLieu: LieuData;
 
       if (state.fillStrategy === "all-same" || gState.journeeStrategy === "all-same") {
@@ -225,17 +230,15 @@ function buildPayload(state: LieuxFormState, groups: GroupeSession[]): SavePaylo
 
     // Check if multiple distinct lieux
     if (gState.journeeStrategy === "per-journee") {
-      const uniqueNoms = new Set(resolvedJournees.map((l) => l.nom || l.mode));
+      const nonEmpty = resolvedJournees.filter((l) => l.nom);
+      const uniqueNoms = new Set(nonEmpty.map((l) => l.nom));
       if (uniqueNoms.size > 1) hasMultipleLieux = true;
     }
 
-    const firstLieu = resolvedJournees[0];
-    const lieuLabel =
-      firstLieu.mode === "Distanciel"
-        ? "Distanciel"
-        : hasMultipleLieux
-        ? "Plusieurs lieux"
-        : [firstLieu.nom, firstLieu.ville].filter(Boolean).join(" — ");
+    const firstNonEmpty = resolvedJournees.find((l) => l.nom) ?? resolvedJournees[0];
+    const lieuLabel = hasMultipleLieux
+      ? "Plusieurs lieux"
+      : [firstNonEmpty.nom, firstNonEmpty.ville].filter(Boolean).join(" — ");
 
     groupPatches.push({ groupId: gState.groupId, lieuLabel });
   }
@@ -248,7 +251,7 @@ function buildPayload(state: LieuxFormState, groups: GroupeSession[]): SavePaylo
 function computeProgress(state: LieuxFormState, groups: GroupeSession[]) {
   let journeesTotal = 0;
   let journeesCompleted = 0;
-  let groupsTotal = groups.length;
+  const groupsTotal = groups.length;
   let groupsCompleted = 0;
 
   for (const gState of state.groups) {
@@ -259,6 +262,14 @@ function computeProgress(state: LieuxFormState, groups: GroupeSession[]) {
 
     let groupDone = jCount > 0;
     for (let i = 0; i < gState.journees.length; i++) {
+      const journeeData = group.journees[i];
+
+      // Distanciel journées are auto-complete (no address needed)
+      if (journeeData?.mode === "Distanciel") {
+        journeesCompleted++;
+        continue;
+      }
+
       const jState = gState.journees[i];
       let lieu: LieuData;
 
@@ -277,7 +288,7 @@ function computeProgress(state: LieuxFormState, groups: GroupeSession[]) {
         lieu = jState.lieuData;
       }
 
-      const isComplete = lieu.mode !== "";
+      const isComplete = lieu.nom.trim() !== "";
       if (isComplete) {
         journeesCompleted++;
       } else {
@@ -343,6 +354,10 @@ export default function LieuxForm({
         if (!group || group.journees.length === 0) continue;
         if (gState.strategy.startsWith("same-as:")) continue;
 
+        // Check if ALL journées are Distanciel — skip validation
+        const allDistanciel = group.journees.every((j) => j.mode === "Distanciel");
+        if (allDistanciel) continue;
+
         if (gState.journeeStrategy === "all-same") {
           const e = validateLieu(gState.lieuData);
           if (e) {
@@ -350,7 +365,11 @@ export default function LieuxForm({
             valid = false;
           }
         } else {
-          for (const jState of gState.journees) {
+          for (let i = 0; i < gState.journees.length; i++) {
+            const jState = gState.journees[i];
+            const journeeData = group.journees[i];
+            // Skip Distanciel and same-as-previous
+            if (journeeData?.mode === "Distanciel") continue;
             if (jState.strategy === "same-as-previous") continue;
             const e = validateLieu(jState.lieuData);
             if (e) {
@@ -372,7 +391,6 @@ export default function LieuxForm({
   const handleSave = useCallback(async () => {
     setSuccessMessage("");
     if (!validateAll()) {
-      // Scroll to first error
       const firstErr = document.querySelector("[data-error]");
       firstErr?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
@@ -425,7 +443,7 @@ export default function LieuxForm({
         journees: fullPayload.journees.filter((j) =>
           failedIds.includes(j.journeeId)
         ),
-        groups: [], // Don't re-patch groups on retry
+        groups: [],
       };
 
       const res = await fetch("/api/lieux", {
@@ -436,7 +454,6 @@ export default function LieuxForm({
 
       const data: SaveResponse = await res.json();
 
-      // Merge results: keep previous successes, replace retried ones
       const mergedResults = state.saveResults.map((prev) => {
         const retried = data.results.find((r) => r.journeeId === prev.journeeId);
         return retried ?? prev;
@@ -456,7 +473,7 @@ export default function LieuxForm({
     }
   }, [state, groups]);
 
-  // ---- Check: all distanciel ----
+  // ---- Empty state ----
 
   const allJournees = groups.flatMap((g) => g.journees);
   const totalJournees = allJournees.length;
@@ -468,6 +485,22 @@ export default function LieuxForm({
         <div className="mt-6 rounded-lg border border-lieux-gris-clair bg-white p-6 text-center">
           <p className="text-sm text-lieux-gris">
             Aucun groupe trouvé pour cette formation.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if ALL journées across all groups are Distanciel
+  const allDistanciel = allJournees.every((j) => j.mode === "Distanciel");
+
+  if (allDistanciel) {
+    return (
+      <div className="mx-auto max-w-4xl px-4">
+        <Header formationNom={formationNom} />
+        <div className="mt-6 rounded-lg border border-lieux-action/20 bg-lieux-action/5 p-6 text-center">
+          <p className="text-sm text-lieux-action">
+            Toutes vos sessions sont en distanciel. Aucun lieu physique requis.
           </p>
         </div>
       </div>
@@ -490,13 +523,11 @@ export default function LieuxForm({
           />
         )}
 
-        {/* Mode A: Global lieu */}
-        {state.fillStrategy === "all-same" && (
+        {/* Mode A: Global lieu (multi-group, user chose "all-same") */}
+        {!singleGroup && state.fillStrategy === "all-same" && (
           <div className="rounded-lg border border-lieux-gris-clair bg-white p-5 shadow-sm">
             <p className="mb-3 text-sm font-bold text-lieux-bleu">
-              {singleGroup
-                ? "Lieu pour toutes les journées"
-                : "Lieu unique pour toute la formation"}
+              Lieu unique pour toute la formation
             </p>
             <LieuFields
               lieuData={state.globalLieu}
@@ -509,8 +540,8 @@ export default function LieuxForm({
           </div>
         )}
 
-        {/* Mode B/C: Per-group */}
-        {state.fillStrategy === "per-group" &&
+        {/* Mode B/C: Per-group (or single group) */}
+        {(singleGroup || state.fillStrategy === "per-group") &&
           groups.map((group) => {
             const gState = state.groups.find((g) => g.groupId === group.id);
             if (!gState) return null;

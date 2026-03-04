@@ -50,6 +50,7 @@ export default function JourneeRow({
   errors,
 }: JourneeRowProps) {
   const isSameAsPrevious = journeeState.strategy === "same-as-previous";
+  const isDistanciel = journee.mode === "Distanciel";
 
   const dateLabel = formatDate(journee.dateDebut);
   const timeStart = formatTime(journee.dateDebut);
@@ -66,6 +67,11 @@ export default function JourneeRow({
             {journee.nom && (
               <span className="ml-2 font-normal text-lieux-gris">— {journee.nom}</span>
             )}
+            {journee.mode && (
+              <span className="ml-2 rounded bg-lieux-gris-clair/50 px-1.5 py-0.5 text-xs font-normal text-lieux-gris">
+                {journee.mode}
+              </span>
+            )}
           </p>
           <p className="text-xs text-lieux-gris">
             {dateLabel}
@@ -75,34 +81,48 @@ export default function JourneeRow({
         <StatusBadge prefilled={journeeState.prefilled} dirty={journeeState.dirty} />
       </div>
 
-      {/* "Same as previous" checkbox */}
-      {!isFirst && (
-        <label className="mb-3 flex cursor-pointer items-center gap-2">
-          <input
-            type="checkbox"
-            checked={isSameAsPrevious}
-            onChange={(e) =>
-              onStrategyChange(
-                journee.id,
-                e.target.checked ? "same-as-previous" : "custom"
-              )
-            }
-            className="h-4 w-4 rounded border-lieux-gris-clair text-lieux-bleu focus:ring-lieux-action"
-          />
-          <span className="text-sm text-lieux-gris">
-            Même lieu que la journée précédente
-          </span>
-        </label>
-      )}
+      {/* Distanciel: no address needed */}
+      {isDistanciel ? (
+        <div className="flex items-center gap-2 rounded-lg bg-lieux-action/5 border border-lieux-action/20 px-4 py-3">
+          <svg className="h-5 w-5 text-lieux-action" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <p className="text-sm text-lieux-action">
+            Session en visioconférence — aucune adresse requise
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* "Same as previous" checkbox */}
+          {!isFirst && (
+            <label className="mb-3 flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                checked={isSameAsPrevious}
+                onChange={(e) =>
+                  onStrategyChange(
+                    journee.id,
+                    e.target.checked ? "same-as-previous" : "custom"
+                  )
+                }
+                className="h-4 w-4 rounded border-lieux-gris-clair text-lieux-bleu focus:ring-lieux-action"
+              />
+              <span className="text-sm text-lieux-gris">
+                Même lieu que la journée précédente
+              </span>
+            </label>
+          )}
 
-      {/* Lieu fields (hidden if same-as-previous) */}
-      {!isSameAsPrevious && (
-        <LieuFields
-          lieuData={journeeState.lieuData}
-          onChange={(field, value) => onFieldChange(journee.id, field, value)}
-          id={`${groupId}-${journee.id}`}
-          errors={errors}
-        />
+          {/* Lieu fields (hidden if same-as-previous) */}
+          {!isSameAsPrevious && (
+            <LieuFields
+              lieuData={journeeState.lieuData}
+              onChange={(field, value) => onFieldChange(journee.id, field, value)}
+              id={`${groupId}-${journee.id}`}
+              errors={errors}
+            />
+          )}
+        </>
       )}
     </div>
   );

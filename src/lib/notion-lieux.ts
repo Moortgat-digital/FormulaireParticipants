@@ -155,36 +155,24 @@ export async function getFullFormationData(formationId: string): Promise<{
 // ---- Write functions ----
 
 export async function patchJournee(journeeId: string, lieu: LieuData): Promise<void> {
-  const isDistanciel = lieu.mode === "Distanciel";
-
+  // Only write address fields + Statut. Mode is managed by Moortgat, not the client.
   await notion.pages.update({
     page_id: journeeId,
     properties: {
-      Mode: lieu.mode ? { select: { name: lieu.mode } } : { select: null },
       Lieu: {
-        rich_text: isDistanciel || !lieu.nom
-          ? []
-          : [{ text: { content: lieu.nom } }],
+        rich_text: lieu.nom ? [{ text: { content: lieu.nom } }] : [],
       },
       Adresse: {
-        rich_text: isDistanciel || !lieu.adresse
-          ? []
-          : [{ text: { content: lieu.adresse } }],
+        rich_text: lieu.adresse ? [{ text: { content: lieu.adresse } }] : [],
       },
       Ville: {
-        rich_text: isDistanciel || !lieu.ville
-          ? []
-          : [{ text: { content: lieu.ville } }],
+        rich_text: lieu.ville ? [{ text: { content: lieu.ville } }] : [],
       },
       "Code postal": {
-        number: isDistanciel || !lieu.codePostal
-          ? null
-          : parseInt(lieu.codePostal, 10),
+        number: lieu.codePostal ? parseInt(lieu.codePostal, 10) : null,
       },
       Pays: {
-        rich_text: isDistanciel || !lieu.pays
-          ? []
-          : [{ text: { content: lieu.pays } }],
+        rich_text: lieu.pays ? [{ text: { content: lieu.pays } }] : [],
       },
       Statut: { select: { name: "À synchroniser" } },
     },
