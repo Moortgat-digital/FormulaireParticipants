@@ -61,18 +61,8 @@ export async function getGroupsByFormation(
     const response = await notion.dataSources.query({
       data_source_id: GROUPS_DATABASE_ID,
       filter: {
-        and: [
-          {
-            property: "📚 Formation",
-            relation: { contains: formationId },
-          },
-          {
-            or: [
-              { property: "État", select: { equals: "Programmée" } },
-              { property: "État", select: { equals: "En cours" } },
-            ],
-          },
-        ],
+        property: "📚 Formation",
+        relation: { contains: formationId },
       },
       sorts: [{ property: "date:Début:start", direction: "ascending" }],
     });
