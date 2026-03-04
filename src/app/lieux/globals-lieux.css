@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-lieux-bleu: #19304c;
+  --color-lieux-bleu-light: #244166;
+  --color-lieux-action: #2b8bcc;
+  --color-lieux-action-light: #6eadc4;
+  --color-lieux-cta: #d32d1a;
+  --color-lieux-cta-hover: #b02515;
+  --color-lieux-vert: #009683;
+  --color-lieux-vert-light: #e8f5f3;
+  --color-lieux-gris: #7f8a9d;
+  --color-lieux-gris-clair: #e2e6e7;
+  --color-lieux-blanc: #f7f8f8;
+  --color-lieux-jaune-light: #fff3cd;
+  --color-lieux-jaune-text: #856404;
+}
