@@ -54,6 +54,7 @@ export default function GroupCard({
 }: GroupCardProps) {
   const isSameAsOther = groupState.strategy.startsWith("same-as:");
   const otherGroups = allGroups.filter((g) => g.id !== group.id);
+  const allDistanciel = group.journees.length > 0 && group.journees.every((j) => j.mode === "Distanciel");
 
   return (
     <div className="overflow-hidden rounded-lg border border-lieux-gris-clair/80 bg-white">
@@ -67,8 +68,8 @@ export default function GroupCard({
             </p>
           </div>
 
-          {/* "Same as other group" dropdown */}
-          {otherGroups.length > 0 && (
+          {/* "Same as other group" dropdown (hidden if all distanciel) */}
+          {otherGroups.length > 0 && !allDistanciel && (
             <div className="shrink-0">
               <select
                 value={isSameAsOther ? groupState.strategy : ""}
@@ -96,6 +97,15 @@ export default function GroupCard({
           <p className="text-sm italic text-lieux-gris">
             Aucune journée programmée pour ce groupe
           </p>
+        ) : allDistanciel ? (
+          <div className="flex items-center gap-2 rounded-md bg-lieux-action/5 border border-lieux-action/15 px-3 py-2">
+            <svg className="h-4 w-4 text-lieux-action" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <p className="text-xs text-lieux-action">
+              Toutes les journées sont en distanciel — aucune adresse requise
+            </p>
+          </div>
         ) : isSameAsOther ? (
           <div className="flex items-center gap-2 rounded-md bg-lieux-action/5 border border-lieux-action/15 px-3 py-2">
             <svg className="h-3.5 w-3.5 text-lieux-action" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
