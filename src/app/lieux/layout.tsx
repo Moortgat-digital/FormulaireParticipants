@@ -16,7 +16,7 @@ export default function LieuxLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ fontFamily: FONT_STACK }} className="min-h-screen bg-lieux-blanc text-lieux-bleu">
+    <div style={{ fontFamily: FONT_STACK }} className="min-h-screen bg-transparent text-lieux-bleu">
       {children}
     </div>
   );

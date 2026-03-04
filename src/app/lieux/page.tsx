@@ -28,7 +28,7 @@ export default async function LieuxPage({ searchParams }: PageProps) {
   const { formation, groups } = await getFullFormationData(formationId);
 
   return (
-    <main className="min-h-screen py-6">
+    <main className="py-2">
       <LieuxForm
         formationId={formationId}
         formationNom={formation.nom || "Formation"}

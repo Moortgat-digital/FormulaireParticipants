@@ -12,10 +12,10 @@ export default function ErrorBanner({ results, onRetry }: ErrorBannerProps) {
   if (failures.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-lieux-cta/30 bg-red-50 p-4">
-      <div className="flex items-start gap-3">
+    <div className="rounded-md border border-lieux-cta/30 bg-red-50 px-4 py-3">
+      <div className="flex items-start gap-2">
         <svg
-          className="mt-0.5 h-5 w-5 shrink-0 text-lieux-cta"
+          className="mt-0.5 h-4 w-4 shrink-0 text-lieux-cta"
           fill="currentColor"
           viewBox="0 0 20 20"
         >

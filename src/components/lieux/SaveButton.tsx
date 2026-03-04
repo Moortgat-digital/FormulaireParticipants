@@ -29,7 +29,7 @@ export default function SaveButton({
         type="button"
         onClick={onClick}
         disabled={saving}
-        className="w-full rounded-lg bg-lieux-cta px-6 py-3.5 text-base font-bold text-white shadow-sm transition-colors hover:bg-lieux-cta-hover focus:outline-none focus:ring-2 focus:ring-lieux-cta focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-md bg-lieux-cta px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-lieux-cta-hover focus:outline-none focus:ring-2 focus:ring-lieux-cta focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {saving ? (
           <span className="flex items-center justify-center gap-2">

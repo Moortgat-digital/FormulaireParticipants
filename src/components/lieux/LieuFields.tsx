@@ -18,7 +18,7 @@ export default function LieuFields({
   id = "lieu",
 }: LieuFieldsProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className="sm:col-span-2">
         <label htmlFor={`${id}-nom`} className="mb-1 block text-sm font-medium text-lieux-gris">
           Nom du lieu <span className="text-lieux-cta">*</span>
@@ -30,7 +30,7 @@ export default function LieuFields({
           onChange={(e) => onChange("nom", e.target.value)}
           disabled={disabled}
           placeholder='ex. "Salle de conférence — Siège social"'
-          className={`h-11 w-full rounded-md border px-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-lieux-action ${
+          className={`h-9 w-full rounded-md border px-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-lieux-action ${
             errors?.nom ? "border-lieux-cta bg-red-50" : "border-lieux-gris-clair bg-white hover:border-lieux-action"
           } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
         />
@@ -50,7 +50,7 @@ export default function LieuFields({
           onChange={(e) => onChange("adresse", e.target.value)}
           disabled={disabled}
           placeholder="123 rue de la Formation"
-          className={`h-11 w-full rounded-md border px-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-lieux-action ${
+          className={`h-9 w-full rounded-md border px-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-lieux-action ${
             errors?.adresse ? "border-lieux-cta bg-red-50" : "border-lieux-gris-clair bg-white hover:border-lieux-action"
           } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
         />
@@ -70,7 +70,7 @@ export default function LieuFields({
           onChange={(e) => onChange("ville", e.target.value)}
           disabled={disabled}
           placeholder="Paris"
-          className={`h-11 w-full rounded-md border px-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-lieux-action ${
+          className={`h-9 w-full rounded-md border px-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-lieux-action ${
             errors?.ville ? "border-lieux-cta bg-red-50" : "border-lieux-gris-clair bg-white hover:border-lieux-action"
           } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
         />
@@ -92,7 +92,7 @@ export default function LieuFields({
           onChange={(e) => onChange("codePostal", e.target.value.replace(/\D/g, ""))}
           disabled={disabled}
           placeholder="75001"
-          className={`h-11 w-full rounded-md border px-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-lieux-action ${
+          className={`h-9 w-full rounded-md border px-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-lieux-action ${
             errors?.codePostal ? "border-lieux-cta bg-red-50" : "border-lieux-gris-clair bg-white hover:border-lieux-action"
           } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
         />
@@ -112,7 +112,7 @@ export default function LieuFields({
           onChange={(e) => onChange("pays", e.target.value)}
           disabled={disabled}
           placeholder="France"
-          className={`h-11 w-full rounded-md border border-lieux-gris-clair bg-white px-3 text-sm transition-colors hover:border-lieux-action focus:outline-none focus:ring-2 focus:ring-lieux-action ${
+          className={`h-9 w-full rounded-md border border-lieux-gris-clair bg-white px-3 text-sm transition-colors hover:border-lieux-action focus:outline-none focus:ring-2 focus:ring-lieux-action ${
             disabled ? "cursor-not-allowed opacity-60" : ""
           }`}
         />

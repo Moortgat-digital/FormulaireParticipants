@@ -511,7 +511,7 @@ export default function LieuxForm({
     <div className="mx-auto max-w-4xl px-4">
       <Header formationNom={formationNom} />
 
-      <div className="mt-4 space-y-4">
+      <div className="mt-3 space-y-3">
         {/* Progress */}
         <ProgressBar {...progress} />
 
@@ -525,8 +525,8 @@ export default function LieuxForm({
 
         {/* Mode A: Global lieu (multi-group, user chose "all-same") */}
         {!singleGroup && state.fillStrategy === "all-same" && (
-          <div className="rounded-lg border border-lieux-gris-clair bg-white p-5 shadow-sm">
-            <p className="mb-3 text-sm font-bold text-lieux-bleu">
+          <div className="rounded-lg border border-lieux-gris-clair/80 bg-white px-4 py-3">
+            <p className="mb-2 text-sm font-semibold text-lieux-bleu">
               Lieu unique pour toute la formation
             </p>
             <LieuFields
@@ -574,9 +574,9 @@ export default function LieuxForm({
 
         {/* Success message */}
         {successMessage && (
-          <div className="rounded-lg border border-lieux-vert/30 bg-lieux-vert-light p-4">
+          <div className="rounded-md border border-lieux-vert/30 bg-lieux-vert-light px-4 py-3">
             <div className="flex items-center gap-2">
-              <svg className="h-5 w-5 text-lieux-vert" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="h-4 w-4 text-lieux-vert" fill="currentColor" viewBox="0 0 20 20">
                 <path
                   fillRule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -606,9 +606,9 @@ export default function LieuxForm({
 
 function Header({ formationNom }: { formationNom: string }) {
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-lieux-bleu">Lieux de formation</h1>
-      <p className="mt-1 text-sm text-lieux-gris">{formationNom}</p>
+    <div className="mb-1">
+      <h2 className="text-lg font-semibold text-lieux-bleu">Renseignez les lieux de formation</h2>
+      <p className="text-xs text-lieux-gris">{formationNom}</p>
     </div>
   );
 }
