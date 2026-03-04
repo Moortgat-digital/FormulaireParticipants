@@ -122,7 +122,6 @@ export async function getJourneesByGroup(groupId: string): Promise<Journee[]> {
           ville: extractText(page, "Ville"),
           codePostal: extractNumber(page, "Code postal"),
           pays: extractText(page, "Pays"),
-          statut: extractSelect(page, "Statut"),
           prefilled: lieu !== "" || mode !== "",
         };
       });
@@ -155,7 +154,6 @@ export async function getFullFormationData(formationId: string): Promise<{
 // ---- Write functions ----
 
 export async function patchJournee(journeeId: string, lieu: LieuData): Promise<void> {
-  // Only write address fields + Statut. Mode is managed by Moortgat, not the client.
   await notion.pages.update({
     page_id: journeeId,
     properties: {
@@ -174,7 +172,6 @@ export async function patchJournee(journeeId: string, lieu: LieuData): Promise<v
       Pays: {
         rich_text: lieu.pays ? [{ text: { content: lieu.pays } }] : [],
       },
-      Statut: { select: { name: "À synchroniser" } },
     },
   });
 }

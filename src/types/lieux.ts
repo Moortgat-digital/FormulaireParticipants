@@ -30,7 +30,6 @@ export interface Journee {
   ville: string;
   codePostal: number | null;
   pays: string;
-  statut: string;
   prefilled: boolean;
 }
 
