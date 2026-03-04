@@ -467,7 +467,7 @@ export default function LieuxForm({
         <Header formationNom={formationNom} />
         <div className="mt-6 rounded-lg border border-lieux-gris-clair bg-white p-6 text-center">
           <p className="text-sm text-lieux-gris">
-            Aucun groupe avec l&apos;état « Programmée » ou « En cours » pour cette formation.
+            Aucun groupe trouvé pour cette formation.
           </p>
         </div>
       </div>
