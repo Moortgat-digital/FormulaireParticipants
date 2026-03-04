@@ -46,7 +46,9 @@ export async function getFormation(formationId: string): Promise<Formation> {
   try {
     const page = await notion.pages.retrieve({ page_id: formationId });
     if ("properties" in page) {
-      return { id: formationId, nom: extractText(page, "Nom") };
+      // Try "Intitulé" first (actual Notion field), fallback to title property
+      const nom = extractText(page, "Intitulé") || extractText(page, "Nom") || extractText(page, "Sujet");
+      return { id: formationId, nom };
     }
     return { id: formationId, nom: "" };
   } catch {
@@ -64,7 +66,7 @@ export async function getGroupsByFormation(
         property: "📚 Formation",
         relation: { contains: formationId },
       },
-      sorts: [{ property: "date:Début:start", direction: "ascending" }],
+      sorts: [{ property: "Début", direction: "ascending" }],
     });
 
     return response.results
@@ -76,8 +78,8 @@ export async function getGroupsByFormation(
         id: page.id,
         nom: extractText(page, "Nom"),
         lieu: extractText(page, "Lieu"),
-        dateDebut: extractDate(page, "date:Début:start"),
-        dateFin: extractDate(page, "date:Fin:start"),
+        dateDebut: extractDate(page, "Début"),
+        dateFin: extractDate(page, "Fin"),
         etat: extractSelect(page, "État"),
         journees: [],
       }))
@@ -96,7 +98,7 @@ export async function getJourneesByGroup(groupId: string): Promise<Journee[]> {
         property: "📂 Session",
         relation: { contains: groupId },
       },
-      sorts: [{ property: "date:Début:start", direction: "ascending" }],
+      sorts: [{ property: "Début", direction: "ascending" }],
     });
 
     return response.results
@@ -111,9 +113,9 @@ export async function getJourneesByGroup(groupId: string): Promise<Journee[]> {
           id: page.id,
           code: extractText(page, "Code"),
           nom: extractText(page, "Nom"),
-          dateDebut: extractDate(page, "date:Début:start"),
-          dateDebutEnd: extractDate(page, "date:Début:start", "end"),
-          dateFin: extractDate(page, "date:Fin:start"),
+          dateDebut: extractDate(page, "Début"),
+          dateDebutEnd: extractDate(page, "Début", "end"),
+          dateFin: extractDate(page, "Fin"),
           mode,
           lieu,
           adresse: extractText(page, "Adresse"),
