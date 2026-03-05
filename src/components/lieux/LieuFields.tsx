@@ -21,7 +21,7 @@ export default function LieuFields({
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div className="sm:col-span-2">
         <label htmlFor={`${id}-nom`} className="mb-1 block text-base font-medium text-lieux-gris">
-          Nom du lieu <span className="text-lieux-cta">*</span>
+          Salle / Nom du lieu
         </label>
         <input
           id={`${id}-nom`}

@@ -160,7 +160,6 @@ function initializeState(
 
 function validateLieu(lieu: LieuData): FieldErrors | null {
   const errs: FieldErrors = {};
-  if (!lieu.nom.trim()) errs.nom = "Requis";
   if (!lieu.adresse.trim()) errs.adresse = "Requis";
   if (!lieu.ville.trim()) errs.ville = "Requis";
   if (!lieu.codePostal.trim()) errs.codePostal = "Requis";
@@ -288,7 +287,7 @@ function computeProgress(state: LieuxFormState, groups: GroupeSession[]) {
         lieu = jState.lieuData;
       }
 
-      const isComplete = lieu.nom.trim() !== "";
+      const isComplete = lieu.adresse.trim() !== "";
       if (isComplete) {
         journeesCompleted++;
       } else {
@@ -526,8 +525,11 @@ export default function LieuxForm({
         {/* Mode A: Global lieu (multi-group, user chose "all-same") */}
         {!singleGroup && state.fillStrategy === "all-same" && (
           <div className="rounded-lg border border-lieux-gris-clair/80 bg-white px-4 py-3">
-            <p className="mb-2 text-base font-semibold text-lieux-bleu">
+            <p className="mb-0.5 text-base font-semibold text-lieux-bleu">
               Lieu unique pour toute la formation
+            </p>
+            <p className="mb-2 text-sm text-lieux-gris">
+              (sera renseigné pour toutes les journées)
             </p>
             <LieuFields
               lieuData={state.globalLieu}
