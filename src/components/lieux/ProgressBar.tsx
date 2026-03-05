@@ -21,7 +21,7 @@ export default function ProgressBar({
       <div className="flex flex-col gap-2 sm:flex-row sm:gap-6">
         {/* Groups progress */}
         <div className="flex-1">
-          <div className="mb-1 flex items-center justify-between text-xs">
+          <div className="mb-1 flex items-center justify-between text-sm">
             <span className="font-medium text-lieux-bleu">Groupes</span>
             <span className="text-lieux-gris">
               {groupsCompleted}/{groupsTotal}
@@ -37,7 +37,7 @@ export default function ProgressBar({
 
         {/* Journees progress */}
         <div className="flex-1">
-          <div className="mb-1 flex items-center justify-between text-xs">
+          <div className="mb-1 flex items-center justify-between text-sm">
             <span className="font-medium text-lieux-bleu">Journées</span>
             <span className="text-lieux-gris">
               {journeesCompleted}/{journeesTotal}
@@ -51,7 +51,7 @@ export default function ProgressBar({
           </div>
         </div>
       </div>
-      <p className="mt-1.5 text-[10px] text-lieux-gris">
+      <p className="mt-1.5 text-xs text-lieux-gris">
         * Les journées en distanciel sont automatiquement comptabilisées comme remplies.
       </p>
     </div>

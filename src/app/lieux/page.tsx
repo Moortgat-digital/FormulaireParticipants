@@ -13,11 +13,11 @@ export default async function LieuxPage({ searchParams }: PageProps) {
   if (!formationId) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="rounded-lg border border-lieux-cta/30 bg-red-50 px-6 py-4 text-center">
-          <p className="text-sm font-semibold text-lieux-cta">
+        <div className="rounded-lg border border-lieux-cta/30 bg-lieux-cta/5 px-6 py-4 text-center">
+          <p className="text-base font-semibold text-lieux-cta">
             Aucune formation associée à cette page.
           </p>
-          <p className="mt-1 text-xs text-lieux-gris">
+          <p className="mt-1 text-sm text-lieux-gris">
             Le paramètre <code>formation_id</code> est requis dans l&apos;URL.
           </p>
         </div>

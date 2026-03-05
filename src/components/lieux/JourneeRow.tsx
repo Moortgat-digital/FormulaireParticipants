@@ -62,18 +62,18 @@ export default function JourneeRow({
       {/* Header */}
       <div className="mb-2 flex items-start justify-between gap-2">
         <div>
-          <p className="text-xs font-semibold text-lieux-bleu">
+          <p className="text-sm font-semibold text-lieux-bleu">
             {journee.code || `Journée ${index + 1}`}
             {journee.nom && (
               <span className="ml-1.5 font-normal text-lieux-gris">— {journee.nom}</span>
             )}
             {journee.mode && (
-              <span className="ml-1.5 rounded bg-lieux-gris-clair/40 px-1.5 py-0.5 text-[11px] font-normal text-lieux-gris">
+              <span className="ml-1.5 rounded bg-lieux-gris-clair/40 px-1.5 py-0.5 text-xs font-normal text-lieux-gris">
                 {journee.mode}
               </span>
             )}
           </p>
-          <p className="text-[11px] text-lieux-gris">
+          <p className="text-xs text-lieux-gris">
             {dateLabel}
             {timeRange && <span className="ml-1">— {timeRange}</span>}
           </p>
@@ -87,7 +87,7 @@ export default function JourneeRow({
           <svg className="h-4 w-4 text-lieux-action" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
           </svg>
-          <p className="text-xs text-lieux-action">
+          <p className="text-sm text-lieux-action">
             Visioconférence — aucune adresse requise
           </p>
         </div>
@@ -107,7 +107,7 @@ export default function JourneeRow({
                 }
                 className="h-4 w-4 rounded border-lieux-gris-clair text-lieux-bleu focus:ring-lieux-action"
               />
-              <span className="text-sm text-lieux-gris">
+              <span className="text-base text-lieux-gris">
                 Même lieu que la journée précédente
               </span>
             </label>

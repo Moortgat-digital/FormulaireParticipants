@@ -12,7 +12,7 @@ export default function ErrorBanner({ results, onRetry }: ErrorBannerProps) {
   if (failures.length === 0) return null;
 
   return (
-    <div className="rounded-md border border-lieux-cta/30 bg-red-50 px-4 py-3">
+    <div className="rounded-md border border-lieux-cta/30 bg-lieux-cta/5 px-4 py-3">
       <div className="flex items-start gap-2">
         <svg
           className="mt-0.5 h-4 w-4 shrink-0 text-lieux-cta"
@@ -26,12 +26,12 @@ export default function ErrorBanner({ results, onRetry }: ErrorBannerProps) {
           />
         </svg>
         <div className="flex-1">
-          <p className="text-sm font-semibold text-lieux-cta">
+          <p className="text-base font-semibold text-lieux-cta">
             {failures.length} journée{failures.length > 1 ? "s" : ""} en erreur
           </p>
           <ul className="mt-1 space-y-0.5">
             {failures.map((f) => (
-              <li key={f.journeeId} className="text-xs text-lieux-cta/80">
+              <li key={f.journeeId} className="text-sm text-lieux-cta/80">
                 {f.journeeId.slice(0, 8)}... : {f.error || "Erreur inconnue"}
               </li>
             ))}
@@ -39,7 +39,7 @@ export default function ErrorBanner({ results, onRetry }: ErrorBannerProps) {
           <button
             type="button"
             onClick={onRetry}
-            className="mt-2 rounded-md border border-lieux-cta/30 bg-white px-3 py-1.5 text-xs font-semibold text-lieux-cta transition-colors hover:bg-lieux-cta/5"
+            className="mt-2 rounded-md border border-lieux-cta/30 bg-white px-3 py-1.5 text-sm font-semibold text-lieux-cta transition-colors hover:bg-lieux-cta/5"
           >
             Réessayer les journées en erreur
           </button>

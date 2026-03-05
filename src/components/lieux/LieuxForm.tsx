@@ -480,10 +480,10 @@ export default function LieuxForm({
 
   if (totalJournees === 0) {
     return (
-      <div className="mx-auto max-w-4xl px-4">
+      <div className="mx-auto max-w-5xl px-4">
         <Header formationNom={formationNom} />
         <div className="mt-6 rounded-lg border border-lieux-gris-clair bg-white p-6 text-center">
-          <p className="text-sm text-lieux-gris">
+          <p className="text-base text-lieux-gris">
             Aucun groupe trouvé pour cette formation.
           </p>
         </div>
@@ -496,10 +496,10 @@ export default function LieuxForm({
 
   if (allDistanciel) {
     return (
-      <div className="mx-auto max-w-4xl px-4">
+      <div className="mx-auto max-w-5xl px-4">
         <Header formationNom={formationNom} />
         <div className="mt-6 rounded-lg border border-lieux-action/20 bg-lieux-action/5 p-6 text-center">
-          <p className="text-sm text-lieux-action">
+          <p className="text-base text-lieux-action">
             Toutes vos sessions sont en distanciel. Aucun lieu physique requis.
           </p>
         </div>
@@ -508,7 +508,7 @@ export default function LieuxForm({
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4">
+    <div className="mx-auto max-w-5xl px-4">
       <Header formationNom={formationNom} />
 
       <div className="mt-3 space-y-3">
@@ -526,7 +526,7 @@ export default function LieuxForm({
         {/* Mode A: Global lieu (multi-group, user chose "all-same") */}
         {!singleGroup && state.fillStrategy === "all-same" && (
           <div className="rounded-lg border border-lieux-gris-clair/80 bg-white px-4 py-3">
-            <p className="mb-2 text-sm font-semibold text-lieux-bleu">
+            <p className="mb-2 text-base font-semibold text-lieux-bleu">
               Lieu unique pour toute la formation
             </p>
             <LieuFields
@@ -583,7 +583,7 @@ export default function LieuxForm({
                   clipRule="evenodd"
                 />
               </svg>
-              <p className="text-sm font-semibold text-lieux-vert">{successMessage}</p>
+              <p className="text-base font-semibold text-lieux-vert">{successMessage}</p>
             </div>
           </div>
         )}
@@ -607,8 +607,8 @@ export default function LieuxForm({
 function Header({ formationNom }: { formationNom: string }) {
   return (
     <div className="mb-1">
-      <h2 className="text-lg font-semibold text-lieux-bleu">Renseignez les lieux de formation</h2>
-      <p className="text-xs text-lieux-gris">{formationNom}</p>
+      <h2 className="text-xl font-semibold text-lieux-bleu">Renseignez les lieux de formation</h2>
+      <p className="text-sm text-lieux-gris">{formationNom}</p>
     </div>
   );
 }

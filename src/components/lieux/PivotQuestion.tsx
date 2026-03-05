@@ -23,7 +23,7 @@ const OPTIONS: { value: FillStrategy; label: string; description: string }[] = [
 export default function PivotQuestion({ strategy, onChange }: PivotQuestionProps) {
   return (
     <div className="rounded-lg border border-lieux-gris-clair/80 bg-white px-4 py-3">
-      <p className="mb-2 text-sm font-semibold text-lieux-bleu">
+      <p className="mb-2 text-base font-semibold text-lieux-bleu">
         Le lieu est-il identique pour tous les groupes ?
       </p>
       <div className="flex gap-2">
@@ -48,10 +48,10 @@ export default function PivotQuestion({ strategy, onChange }: PivotQuestionProps
               )}
             </span>
             <div>
-              <p className={`text-xs font-semibold ${strategy === value ? "text-lieux-bleu" : "text-lieux-gris"}`}>
+              <p className={`text-sm font-semibold ${strategy === value ? "text-lieux-bleu" : "text-lieux-gris"}`}>
                 {label}
               </p>
-              <p className="text-[11px] text-lieux-gris">{description}</p>
+              <p className="text-xs text-lieux-gris">{description}</p>
             </div>
           </button>
         ))}

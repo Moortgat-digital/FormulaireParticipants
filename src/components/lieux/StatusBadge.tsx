@@ -8,7 +8,7 @@ interface StatusBadgeProps {
 export default function StatusBadge({ prefilled, dirty }: StatusBadgeProps) {
   if (prefilled && !dirty) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-lieux-vert-light px-2 py-0.5 text-[11px] font-medium text-lieux-vert border border-lieux-vert/20">
+      <span className="inline-flex items-center gap-1 rounded-full bg-lieux-vert-light px-2 py-0.5 text-xs font-medium text-lieux-vert border border-lieux-vert/20">
         <svg className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 20 20">
           <path
             fillRule="evenodd"
@@ -22,7 +22,7 @@ export default function StatusBadge({ prefilled, dirty }: StatusBadgeProps) {
   }
 
   return (
-    <span className="inline-flex items-center rounded-full bg-lieux-jaune-light px-2 py-0.5 text-[11px] font-medium text-lieux-jaune-text border border-lieux-jaune-text/20">
+    <span className="inline-flex items-center rounded-full bg-lieux-jaune-light px-2 py-0.5 text-xs font-medium text-lieux-jaune-text border border-lieux-jaune-text/20">
       À compléter
     </span>
   );

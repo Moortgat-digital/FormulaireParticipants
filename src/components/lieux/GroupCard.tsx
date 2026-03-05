@@ -62,8 +62,8 @@ export default function GroupCard({
       <div className="border-l-4 border-l-lieux-bleu bg-white px-4 py-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-sm font-bold text-lieux-bleu">{group.nom}</h3>
-            <p className="text-[11px] text-lieux-gris">
+            <h3 className="text-base font-bold text-lieux-bleu">{group.nom}</h3>
+            <p className="text-xs text-lieux-gris">
               {formatDateRange(group.dateDebut, group.dateFin)}
             </p>
           </div>
@@ -77,7 +77,7 @@ export default function GroupCard({
                   const val = e.target.value;
                   onGroupStrategyChange(group.id, val ? (val as GroupStrategy) : "custom");
                 }}
-                className="rounded-md border border-lieux-gris-clair bg-white px-2 py-1.5 text-xs text-lieux-gris transition-colors hover:border-lieux-action focus:outline-none focus:ring-2 focus:ring-lieux-action"
+                className="rounded-md border border-lieux-gris-clair bg-white px-2 py-1.5 text-sm text-lieux-gris transition-colors hover:border-lieux-action focus:outline-none focus:ring-2 focus:ring-lieux-action"
               >
                 <option value="">Saisie personnalisée</option>
                 {otherGroups.map((og) => (
@@ -94,7 +94,7 @@ export default function GroupCard({
       {/* Body */}
       <div className="px-4 pb-4 pt-2">
         {group.journees.length === 0 ? (
-          <p className="text-sm italic text-lieux-gris">
+          <p className="text-base italic text-lieux-gris">
             Aucune journée programmée pour ce groupe
           </p>
         ) : allDistanciel ? (
@@ -102,7 +102,7 @@ export default function GroupCard({
             <svg className="h-4 w-4 text-lieux-action" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
-            <p className="text-xs text-lieux-action">
+            <p className="text-sm text-lieux-action">
               Toutes les journées sont en distanciel — aucune adresse requise
             </p>
           </div>
@@ -111,7 +111,7 @@ export default function GroupCard({
             <svg className="h-3.5 w-3.5 text-lieux-action" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
             </svg>
-            <p className="text-xs text-lieux-action">
+            <p className="text-sm text-lieux-action">
               Utilise le même lieu que{" "}
               <strong>
                 {allGroups.find((g) => `same-as:${g.id}` === groupState.strategy)?.nom ?? "autre groupe"}
@@ -122,7 +122,7 @@ export default function GroupCard({
           <div className="space-y-3">
             {/* Sub-question: same lieu for all journées? */}
             <div>
-              <p className="mb-1.5 text-xs font-semibold text-lieux-bleu-light">
+              <p className="mb-1.5 text-sm font-semibold text-lieux-bleu-light">
                 Le lieu varie-t-il au sein de ce groupe ?
               </p>
               <div className="flex gap-2">
@@ -134,7 +134,7 @@ export default function GroupCard({
                     key={value}
                     type="button"
                     onClick={() => onJourneeStrategyToggle(group.id, value)}
-                    className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[11px] transition-colors ${
+                    className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm transition-colors ${
                       groupState.journeeStrategy === value
                         ? "border-lieux-bleu bg-lieux-bleu/5 font-medium text-lieux-bleu"
                         : "border-lieux-gris-clair text-lieux-gris hover:border-lieux-action"
