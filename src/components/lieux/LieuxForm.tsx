@@ -472,6 +472,27 @@ export default function LieuxForm({
     }
   }, [state, groups]);
 
+  // ---- Formation terminée ----
+
+  const latestEnd = groups.reduce((max, g) => {
+    return g.dateFin > max ? g.dateFin : max;
+  }, "");
+
+  const isTerminee = latestEnd !== "" && new Date(latestEnd) < new Date();
+
+  if (isTerminee) {
+    return (
+      <div className="mx-auto max-w-5xl px-4">
+        <Header formationNom={formationNom} />
+        <div className="mt-6 rounded-lg border border-lieux-gris-clair bg-white p-6 text-center">
+          <p className="text-base text-lieux-gris">
+            La formation est terminée. Le formulaire n&apos;est plus accessible.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // ---- Empty state ----
 
   const allJournees = groups.flatMap((g) => g.journees);
