@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const journees = await getCalendrierJournees(start, end);
+    const email = searchParams.get("email") || undefined;
+    const journees = await getCalendrierJournees(start, end, email);
     const res = NextResponse.json({ journees });
     // Cache for 2 minutes to reduce Notion API calls on repeated loads
     res.headers.set("Cache-Control", "s-maxage=120, stale-while-revalidate=60");

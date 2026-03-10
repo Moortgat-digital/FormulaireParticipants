@@ -6,6 +6,7 @@ const notion = new Client({
 });
 
 const JOURNEES_DATABASE_ID = "22c2b5dd-fdb8-80b1-8837-000baed680f9";
+const ANIMATEURS_DATABASE_ID = "25c2b5dd-fdb8-8014-92fb-effebff0cd49";
 
 // ---- helpers ----
 
@@ -90,21 +91,62 @@ function hasNonEmptyRelation(page: any, name: string): boolean {
   return false;
 }
 
+// ---- animateur lookup by email ----
+
+async function findAnimateurIdByEmail(email: string): Promise<string | null> {
+  // Use raw REST API — dataSources.query doesn't work for this database
+  const resp = await fetch(
+    `https://api.notion.com/v1/databases/${ANIMATEURS_DATABASE_ID}/query`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.NOTION_API_KEY}`,
+        "Notion-Version": "2022-06-28",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        filter: { property: "E-mail", email: { equals: email } },
+        page_size: 1,
+      }),
+    }
+  );
+  if (!resp.ok) {
+    console.error("findAnimateurIdByEmail error:", resp.status, await resp.text());
+    return null;
+  }
+  const data = await resp.json();
+  if (!data.results || data.results.length === 0) return null;
+  return data.results[0].id;
+}
+
 // ---- main query ----
 
 export async function getCalendrierJournees(
   startDate: string,
-  endDate: string
+  endDate: string,
+  animateurEmail?: string
 ): Promise<CalendrierJournee[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const filter: any = {
-    and: [
-      { property: "📂 Session", relation: { is_not_empty: true } },
-      { property: "📚 Formation", relation: { is_not_empty: true } },
-      { property: "Début", date: { on_or_after: startDate } },
-      { property: "Début", date: { on_or_before: endDate } },
-    ],
-  };
+  const conditions: any[] = [
+    { property: "📂 Session", relation: { is_not_empty: true } },
+    { property: "📚 Formation", relation: { is_not_empty: true } },
+    { property: "Début", date: { on_or_after: startDate } },
+    { property: "Début", date: { on_or_before: endDate } },
+  ];
+
+  if (animateurEmail) {
+    const animateurPageId = await findAnimateurIdByEmail(animateurEmail);
+    if (!animateurPageId) {
+      // No animateur found with this email — return empty
+      return [];
+    }
+    conditions.push({
+      property: "🧑‍🏫 Animateur",
+      relation: { contains: animateurPageId },
+    });
+  }
+
+  const filter = { and: conditions };
 
   // Paginate through all results
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

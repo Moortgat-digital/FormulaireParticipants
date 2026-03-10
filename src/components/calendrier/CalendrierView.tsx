@@ -55,7 +55,12 @@ const MOIS = [
 
 // ── component ──
 
-export default function CalendrierView() {
+interface CalendrierViewProps {
+  email?: string;
+  titre?: string;
+}
+
+export default function CalendrierView({ email, titre }: CalendrierViewProps = {}) {
   const [mode, setMode] = useState<CalendrierMode>("week");
   const [refDate, setRefDate] = useState(() => new Date());
   const [journees, setJournees] = useState<CalendrierJournee[]>([]);
@@ -78,7 +83,9 @@ export default function CalendrierView() {
     const { start, end } = range();
     setLoading(true);
     setError("");
-    fetch(`/api/calendrier?start=${fmt(start)}&end=${fmt(end)}`)
+    const params = new URLSearchParams({ start: fmt(start), end: fmt(end) });
+    if (email) params.set("email", email);
+    fetch(`/api/calendrier?${params}`)
       .then((r) => {
         if (!r.ok) throw new Error("Erreur serveur");
         return r.json();
@@ -86,7 +93,7 @@ export default function CalendrierView() {
       .then((data) => setJournees(data.journees ?? []))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [range]);
+  }, [range, email]);
 
   // navigation
   function prev() {
@@ -133,7 +140,7 @@ export default function CalendrierView() {
     <div>
       {/* ── Header ── */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <h1 className="text-2xl font-bold text-cal-bleu">Calendrier</h1>
+        <h1 className="text-2xl font-bold text-cal-bleu">{titre || "Calendrier"}</h1>
 
         <div className="flex items-center gap-2">
           {/* Mode toggle */}
