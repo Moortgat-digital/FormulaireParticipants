@@ -57,10 +57,11 @@ const MOIS = [
 
 interface CalendrierViewProps {
   email?: string;
+  animateurId?: string;
   titre?: string;
 }
 
-export default function CalendrierView({ email, titre }: CalendrierViewProps = {}) {
+export default function CalendrierView({ email, animateurId, titre }: CalendrierViewProps = {}) {
   const [mode, setMode] = useState<CalendrierMode>("week");
   const [refDate, setRefDate] = useState(() => new Date());
   const [journees, setJournees] = useState<CalendrierJournee[]>([]);
@@ -84,7 +85,8 @@ export default function CalendrierView({ email, titre }: CalendrierViewProps = {
     setLoading(true);
     setError("");
     const params = new URLSearchParams({ start: fmt(start), end: fmt(end) });
-    if (email) params.set("email", email);
+    if (animateurId) params.set("animateurId", animateurId);
+    else if (email) params.set("email", email);
     fetch(`/api/calendrier?${params}`)
       .then((r) => {
         if (!r.ok) throw new Error("Erreur serveur");
@@ -93,7 +95,7 @@ export default function CalendrierView({ email, titre }: CalendrierViewProps = {
       .then((data) => setJournees(data.journees ?? []))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [range, email]);
+  }, [range, email, animateurId]);
 
   // navigation
   function prev() {

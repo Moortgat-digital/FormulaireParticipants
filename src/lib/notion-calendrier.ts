@@ -124,7 +124,7 @@ async function findAnimateurIdByEmail(email: string): Promise<string | null> {
 export async function getCalendrierJournees(
   startDate: string,
   endDate: string,
-  animateurEmail?: string
+  opts?: { email?: string; animateurId?: string }
 ): Promise<CalendrierJournee[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const conditions: any[] = [
@@ -134,12 +134,13 @@ export async function getCalendrierJournees(
     { property: "Début", date: { on_or_before: endDate } },
   ];
 
-  if (animateurEmail) {
-    const animateurPageId = await findAnimateurIdByEmail(animateurEmail);
-    if (!animateurPageId) {
-      // No animateur found with this email — return empty
-      return [];
-    }
+  // Prefer direct animateur ID (fastest), fallback to email lookup
+  let animateurPageId = opts?.animateurId;
+  if (!animateurPageId && opts?.email) {
+    animateurPageId = await findAnimateurIdByEmail(opts.email) ?? undefined;
+  }
+  if (opts?.animateurId || opts?.email) {
+    if (!animateurPageId) return []; // no match found
     conditions.push({
       property: "🧑‍🏫 Animateur",
       relation: { contains: animateurPageId },
