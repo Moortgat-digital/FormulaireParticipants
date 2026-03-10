@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-cal-bleu: #19304c;
+  --color-cal-bleu-light: #244166;
+  --color-cal-action: #2b8bcc;
+  --color-cal-vert: #009683;
+  --color-cal-vert-light: #e8f5f3;
+  --color-cal-gris: #7f8a9d;
+  --color-cal-gris-clair: #e2e6e7;
+  --color-cal-blanc: #f7f8f8;
+  --color-cal-orange: #e67e22;
+  --color-cal-rouge: #c0392b;
+  --color-cal-jaune: #f39c12;
+}
