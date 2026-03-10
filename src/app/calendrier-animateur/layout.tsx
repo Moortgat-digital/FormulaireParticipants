@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "../calendrier/globals-calendrier.css";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Mon calendrier animateur",
@@ -7,19 +10,13 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const FONT_STACK =
-  '"Avenir Next LT Pro", "Avenir Next", Avenir, "Segoe UI", system-ui, sans-serif';
-
 export default function CalendrierAnimateurLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div
-      style={{ fontFamily: FONT_STACK }}
-      className="bg-cal-blanc text-cal-bleu overflow-hidden"
-    >
+    <div className={`${inter.className} bg-cal-blanc text-cal-bleu overflow-hidden`}>
       {children}
     </div>
   );
