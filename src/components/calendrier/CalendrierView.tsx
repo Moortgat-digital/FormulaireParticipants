@@ -59,9 +59,10 @@ interface CalendrierViewProps {
   email?: string;
   animateurId?: string;
   titre?: string;
+  hideAnimateur?: boolean;
 }
 
-export default function CalendrierView({ email, animateurId, titre }: CalendrierViewProps = {}) {
+export default function CalendrierView({ email, animateurId, titre, hideAnimateur }: CalendrierViewProps = {}) {
   const [mode, setMode] = useState<CalendrierMode>("week");
   const [refDate, setRefDate] = useState(() => new Date());
   const [journees, setJournees] = useState<CalendrierJournee[]>([]);
@@ -236,7 +237,7 @@ export default function CalendrierView({ email, animateurId, titre }: Calendrier
                   </div>
                   <div className="flex-1 p-1 space-y-1">
                     {dayJournees.map((j) => (
-                      <CalendrierCard key={j.id} journee={j} compact={false} />
+                      <CalendrierCard key={j.id} journee={j} compact={false} hideAnimateur={hideAnimateur} />
                     ))}
                   </div>
                 </div>
@@ -271,7 +272,7 @@ export default function CalendrierView({ email, animateurId, titre }: Calendrier
                   </div>
                   <div className="space-y-1.5">
                     {dayJournees.map((j) => (
-                      <CalendrierCard key={j.id} journee={j} compact={false} />
+                      <CalendrierCard key={j.id} journee={j} compact={false} hideAnimateur={hideAnimateur} />
                     ))}
                   </div>
                 </div>
@@ -325,7 +326,7 @@ export default function CalendrierView({ email, animateurId, titre }: Calendrier
                     </div>
                     <div className="flex-1 px-1 pb-1 space-y-0.5">
                       {dayJournees.map((j) => (
-                        <CalendrierCard key={j.id} journee={j} compact={true} />
+                        <CalendrierCard key={j.id} journee={j} compact={true} hideAnimateur={hideAnimateur} />
                       ))}
                     </div>
                   </div>
@@ -367,7 +368,7 @@ export default function CalendrierView({ email, animateurId, titre }: Calendrier
                   {dayJournees.length > 0 ? (
                     <div className="space-y-1.5">
                       {dayJournees.map((j) => (
-                        <CalendrierCard key={j.id} journee={j} compact={false} />
+                        <CalendrierCard key={j.id} journee={j} compact={false} hideAnimateur={hideAnimateur} />
                       ))}
                     </div>
                   ) : (

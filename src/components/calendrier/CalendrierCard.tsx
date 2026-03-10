@@ -38,9 +38,10 @@ const PANOORAMA_BASE = "https://panoorama.moortgat.com/journee?recordId=";
 interface Props {
   journee: CalendrierJournee;
   compact: boolean;
+  hideAnimateur?: boolean;
 }
 
-export default function CalendrierCard({ journee, compact }: Props) {
+export default function CalendrierCard({ journee, compact, hideAnimateur }: Props) {
   const cc = codeColor(journee.code);
   const badge = etatBadge(journee.etat);
   const panooramaUrl = `${PANOORAMA_BASE}${journee.id}`;
@@ -122,14 +123,25 @@ export default function CalendrierCard({ journee, compact }: Props) {
         </div>
       )}
 
-      {/* Animateur */}
-      {journee.animateur && (
+      {/* Animateur (hidden on animateur's own calendar) */}
+      {!hideAnimateur && journee.animateur && (
         <div className="text-xs text-cal-gris mb-1.5 flex items-center gap-1">
           <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" className="shrink-0 opacity-50">
             <circle cx="8" cy="5" r="3" fill="none" stroke="currentColor" strokeWidth="1.5"/>
             <path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
           </svg>
           <span className="italic">animée par {journee.animateur}</span>
+        </div>
+      )}
+
+      {/* Lieu */}
+      {journee.lieu && (
+        <div className="text-xs text-cal-gris mb-1.5 flex items-center gap-1">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="shrink-0 opacity-50">
+            <path d="M8 1C5.2 1 3 3.2 3 6c0 4 5 9 5 9s5-5 5-9c0-2.8-2.2-5-5-5z" stroke="currentColor" strokeWidth="1.5"/>
+            <circle cx="8" cy="6" r="1.5" fill="currentColor"/>
+          </svg>
+          {journee.lieu}
         </div>
       )}
 

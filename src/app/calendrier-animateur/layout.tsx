@@ -18,7 +18,7 @@ export default function CalendrierAnimateurLayout({
   return (
     <div
       style={{ fontFamily: FONT_STACK }}
-      className="bg-cal-blanc text-cal-bleu"
+      className="bg-cal-blanc text-cal-bleu overflow-hidden"
     >
       {children}
     </div>

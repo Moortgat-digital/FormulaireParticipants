@@ -27,7 +27,7 @@ export default async function CalendrierAnimateurPage({ searchParams }: PageProp
 
   return (
     <main className="px-3 py-4 w-full">
-      <CalendrierView email={email || undefined} animateurId={animateurId || undefined} titre="Mon calendrier" />
+      <CalendrierView email={email || undefined} animateurId={animateurId || undefined} titre="Mon calendrier" hideAnimateur />
       <IframeResizer />
     </main>
   );

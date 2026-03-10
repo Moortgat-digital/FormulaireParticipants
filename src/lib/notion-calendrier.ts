@@ -36,6 +36,20 @@ function extractDate(page: any, name: string): string {
   return p.date.start ?? "";
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractRichText(page: any, name: string): string {
+  const p = prop(page, name);
+  if (p?.type !== "rich_text") return "";
+  return p.rich_text.map((t: { plain_text: string }) => t.plain_text).join("");
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractNumber(page: any, name: string): number | null {
+  const p = prop(page, name);
+  if (p?.type !== "number") return null;
+  return p.number;
+}
+
 /**
  * Extract text from a rollup of type "array" (show_original).
  * Handles title, rich_text, and people items inside the array.
@@ -204,6 +218,14 @@ export async function getCalendrierJournees(
       heureFin = dateFinStr.slice(11, 16);
     }
 
+    // Build lieu string: "Lieu – Adresse, Code postal Ville"
+    const lieuNom = extractRichText(page, "Lieu");
+    const adresse = extractRichText(page, "Adresse");
+    const codePostal = extractNumber(page, "Code postal");
+    const ville = extractRichText(page, "Ville");
+    const lieuParts = [lieuNom, [adresse, [codePostal, ville].filter(Boolean).join(" ")].filter(Boolean).join(", ")].filter(Boolean);
+    const lieu = lieuParts.join(" – ");
+
     return {
       id: page.id,
       code,
@@ -213,6 +235,7 @@ export async function getCalendrierJournees(
       date,
       heure,
       heureFin,
+      lieu,
       etat: extractSelect(page, "État"),
       hasEvaluations: hasNonEmptyRelation(page, "✒️ Evaluations à chaud"),
     };
