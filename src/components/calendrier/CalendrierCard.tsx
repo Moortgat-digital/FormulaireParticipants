@@ -67,9 +67,14 @@ export default function CalendrierCard({ journee, compact, hideAnimateur }: Prop
             </span>
           )}
         </div>
-        <div className="text-[10px] leading-tight truncate mt-0.5 text-cal-bleu font-medium">
+        <div className="text-[10px] leading-tight truncate mt-0.5 text-cal-bleu font-bold">
           {journee.formationNom}
         </div>
+        {(journee.groupeNom || journee.animateur) && (
+          <div className="text-[10px] leading-tight truncate text-cal-gris">
+            {[journee.groupeNom, journee.animateur].filter(Boolean).join(" – ")}
+          </div>
+        )}
         {/* Hover popover with ouvrir link */}
         <a
           href={panooramaUrl}
