@@ -238,6 +238,9 @@ export async function getCalendrierJournees(
       lieu,
       etat: extractSelect(page, "État"),
       hasEvaluations: hasNonEmptyRelation(page, "✒️ Evaluations à chaud"),
+      questionsAnimOk:
+        extractRichText(page, "Remarques animateur").length > 0 &&
+        extractRichText(page, "Retex animateur").length > 0,
     };
   });
 }

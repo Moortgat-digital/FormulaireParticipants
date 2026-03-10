@@ -10,6 +10,7 @@ export interface CalendrierJournee {
   lieu: string;        // "LEVALLOIS B512 – 1 rue de Villiers, 92300 Levallois"
   etat: string;        // "Programmée" | "En cours" | "Clôturée" | …
   hasEvaluations: boolean;
+  questionsAnimOk: boolean; // true when both "Remarques animateur" & "Retex animateur" are filled
 }
 
 export type CalendrierMode = "week" | "month";

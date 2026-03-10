@@ -61,7 +61,19 @@ export default function CalendrierCard({ journee, compact, hideAnimateur }: Prop
               {journee.heure}{journee.heureFin ? ` – ${journee.heureFin}` : ""}
             </span>
           )}
-          {journee.hasEvaluations && (
+          {hideAnimateur && (
+            <span
+              className={`ml-auto text-[10px] font-medium px-1 rounded ${
+                journee.questionsAnimOk
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+              title={journee.questionsAnimOk ? "Remarques & Retex remplis" : "Remarques ou Retex manquant"}
+            >
+              Q.&nbsp;Anim. {journee.questionsAnimOk ? "✅" : "❌"}
+            </span>
+          )}
+          {journee.hasEvaluations && !hideAnimateur && (
             <span className="ml-auto text-[10px]" title="Évaluations à chaud remplies">
               ✒️✅
             </span>
@@ -150,14 +162,28 @@ export default function CalendrierCard({ journee, compact, hideAnimateur }: Prop
         </div>
       )}
 
-      {/* Status badge */}
-      {badge && (
-        <span
-          className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded border ${badge.bg}`}
-        >
-          {badge.label}
-        </span>
-      )}
+      {/* Status badge + Q. Anim badge */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {badge && (
+          <span
+            className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded border ${badge.bg}`}
+          >
+            {badge.label}
+          </span>
+        )}
+        {hideAnimateur && (
+          <span
+            className={`inline-block text-[10px] font-medium px-1.5 py-0.5 rounded border ${
+              journee.questionsAnimOk
+                ? "bg-green-100 text-green-700 border-green-300"
+                : "bg-red-100 text-red-700 border-red-300"
+            }`}
+            title={journee.questionsAnimOk ? "Remarques & Retex remplis" : "Remarques ou Retex manquant"}
+          >
+            Q. Anim. {journee.questionsAnimOk ? "✅" : "❌"}
+          </span>
+        )}
+      </div>
 
       {/* Ouvrir button */}
       <a
