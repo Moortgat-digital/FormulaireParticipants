@@ -56,7 +56,9 @@ export default function CalendrierCard({ journee, compact }: Props) {
             {journee.code}
           </span>
           {journee.heure && (
-            <span className="text-[10px] text-cal-gris">{journee.heure}</span>
+            <span className="text-[10px] text-cal-gris">
+              {journee.heure}{journee.heureFin ? ` – ${journee.heureFin}` : ""}
+            </span>
           )}
           {journee.hasEvaluations && (
             <span className="ml-auto text-[10px]" title="Évaluations à chaud remplies">
@@ -92,7 +94,9 @@ export default function CalendrierCard({ journee, compact }: Props) {
             {journee.code}
           </span>
           {journee.heure && (
-            <span className="text-xs text-cal-gris">{journee.heure}</span>
+            <span className="text-xs text-cal-gris">
+              {journee.heure}{journee.heureFin ? ` – ${journee.heureFin}` : ""}
+            </span>
           )}
         </div>
         {journee.hasEvaluations && (

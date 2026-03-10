@@ -143,16 +143,22 @@ export async function getCalendrierJournees(
     const groupeNom = extractRollupText(page, "Affichage/Groupe");
     const animateur = extractAnimateur(page);
 
-    const dateStr = extractDate(page, "Début");
+    const dateDebutStr = extractDate(page, "Début");
     let date = "";
     let heure = "";
-    if (dateStr) {
-      if (dateStr.includes("T")) {
-        date = dateStr.slice(0, 10);
-        heure = dateStr.slice(11, 16);
+    if (dateDebutStr) {
+      if (dateDebutStr.includes("T")) {
+        date = dateDebutStr.slice(0, 10);
+        heure = dateDebutStr.slice(11, 16);
       } else {
-        date = dateStr;
+        date = dateDebutStr;
       }
+    }
+
+    const dateFinStr = extractDate(page, "Fin");
+    let heureFin = "";
+    if (dateFinStr && dateFinStr.includes("T")) {
+      heureFin = dateFinStr.slice(11, 16);
     }
 
     return {
@@ -163,6 +169,7 @@ export async function getCalendrierJournees(
       animateur,
       date,
       heure,
+      heureFin,
       etat: extractSelect(page, "État"),
       hasEvaluations: hasNonEmptyRelation(page, "✒️ Evaluations à chaud"),
     };

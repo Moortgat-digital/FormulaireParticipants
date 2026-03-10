@@ -18,7 +18,7 @@ function startOfWeek(d: Date): Date {
 function endOfWeek(d: Date): Date {
   const s = startOfWeek(d);
   const r = new Date(s);
-  r.setDate(s.getDate() + 6);
+  r.setDate(s.getDate() + 4); // Friday (Mon + 4)
   return r;
 }
 
@@ -47,7 +47,7 @@ function isSameDay(a: string, b: string): boolean {
   return a === b;
 }
 
-const JOURS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+const JOURS = ["Lun", "Mar", "Mer", "Jeu", "Ven"];
 const MOIS = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
@@ -112,12 +112,13 @@ export default function CalendrierView() {
       ? `${rStart.getDate()} ${MOIS[rStart.getMonth()]} – ${rEnd.getDate()} ${MOIS[rEnd.getMonth()]} ${rEnd.getFullYear()}`
       : `${MOIS[refDate.getMonth()]} ${refDate.getFullYear()}`;
 
-  // build day columns
+  // build day columns (weekdays only)
   const days: Date[] = [];
   {
     let cur = new Date(rStart);
     while (cur <= rEnd) {
-      days.push(new Date(cur));
+      const dow = cur.getDay();
+      if (dow >= 1 && dow <= 5) days.push(new Date(cur));
       cur = addDays(cur, 1);
     }
   }
@@ -201,23 +202,20 @@ export default function CalendrierView() {
       {!loading && mode === "week" && (
         <>
           {/* Desktop: 7-column grid */}
-          <div className="hidden md:grid grid-cols-7 gap-px bg-cal-gris-clair rounded-lg overflow-hidden border border-cal-gris-clair">
+          <div className="hidden md:grid grid-cols-5 gap-px bg-cal-gris-clair rounded-lg overflow-hidden border border-cal-gris-clair">
             {days.map((day) => {
               const dateStr = fmt(day);
               const isToday = dateStr === todayStr;
-              const isWeekend = day.getDay() === 0 || day.getDay() === 6;
               const dayJournees = journeesForDay(dateStr);
 
               return (
                 <div
                   key={dateStr}
-                  className={`min-h-[200px] flex flex-col ${
-                    isWeekend ? "bg-gray-50" : "bg-white"
-                  }`}
+                  className="min-h-[200px] flex flex-col bg-white"
                 >
                   <div className="px-2 py-2 text-center border-b border-cal-gris-clair">
                     <span className="text-xs text-cal-gris uppercase">
-                      {JOURS[day.getDay() === 0 ? 6 : day.getDay() - 1]}
+                      {JOURS[day.getDay() - 1]}
                     </span>
                     <div
                       className={`inline-flex items-center justify-center w-7 h-7 rounded-full ml-1 text-sm font-semibold ${
@@ -249,7 +247,7 @@ export default function CalendrierView() {
                 <div key={dateStr}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-xs text-cal-gris uppercase font-semibold">
-                      {JOURS[day.getDay() === 0 ? 6 : day.getDay() - 1]}
+                      {JOURS[day.getDay() - 1]}
                     </span>
                     <span
                       className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-semibold ${
@@ -279,7 +277,7 @@ export default function CalendrierView() {
         <>
           {/* Desktop: 7-column grid */}
           <div className="hidden md:block">
-            <div className="grid grid-cols-7 gap-px bg-cal-gris-clair rounded-t-lg overflow-hidden border border-cal-gris-clair border-b-0">
+            <div className="grid grid-cols-5 gap-px bg-cal-gris-clair rounded-t-lg overflow-hidden border border-cal-gris-clair border-b-0">
               {JOURS.map((j) => (
                 <div
                   key={j}
@@ -289,7 +287,7 @@ export default function CalendrierView() {
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-7 gap-px bg-cal-gris-clair rounded-b-lg overflow-hidden border border-cal-gris-clair">
+            <div className="grid grid-cols-5 gap-px bg-cal-gris-clair rounded-b-lg overflow-hidden border border-cal-gris-clair">
               {days.map((day) => {
                 const dateStr = fmt(day);
                 const isToday = dateStr === todayStr;
@@ -340,7 +338,7 @@ export default function CalendrierView() {
                 <div key={dateStr}>
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-xs text-cal-gris uppercase font-semibold">
-                      {JOURS[day.getDay() === 0 ? 6 : day.getDay() - 1]}
+                      {JOURS[day.getDay() - 1]}
                     </span>
                     <span
                       className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-semibold ${
