@@ -8,6 +8,8 @@ interface CsmFormProps {
   formationNom: string;
 }
 
+type EditableFields = Pick<DemandeInscription, "nom" | "prenom" | "email" | "entreprise">;
+
 export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
   const [demandes, setDemandes] = useState<DemandeInscription[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -18,6 +20,11 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
   const [filterStatut, setFilterStatut] = useState<string>("all");
   const [filterGroupe, setFilterGroupe] = useState<string>("all");
   const [search, setSearch] = useState("");
+
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFields, setEditFields] = useState<EditableFields>({ nom: "", prenom: "", email: "", entreprise: "" });
+  const [saving, setSaving] = useState(false);
 
   const fetchDemandes = useCallback(async () => {
     setLoading(true);
@@ -111,6 +118,41 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
       });
     } finally {
       setSending(false);
+    }
+  }
+
+  function startEdit(d: DemandeInscription) {
+    setEditingId(d.id);
+    setEditFields({ nom: d.nom, prenom: d.prenom, email: d.email, entreprise: d.entreprise });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
+
+  async function saveEdit() {
+    if (!editingId) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/csm", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pageId: editingId, fields: editFields }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur");
+      // Update local state
+      setDemandes((prev) =>
+        prev.map((d) => (d.id === editingId ? { ...d, ...editFields } : d))
+      );
+      setEditingId(null);
+    } catch (err) {
+      setResult({
+        success: false,
+        message: err instanceof Error ? err.message : "Erreur lors de la sauvegarde.",
+      });
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -251,69 +293,175 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
               </div>
 
               {/* Table header */}
-              <div className="hidden sm:grid sm:grid-cols-[40px_1fr_1fr_1fr_1fr_120px] gap-2 px-4 py-2 text-xs font-semibold text-csm-gris uppercase tracking-wide border-b border-csm-gris-clair">
+              <div className="hidden sm:grid sm:grid-cols-[40px_1fr_1fr_1fr_1fr_120px_80px] gap-2 px-4 py-2 text-xs font-semibold text-csm-gris uppercase tracking-wide border-b border-csm-gris-clair">
                 <div />
                 <div>Participant</div>
                 <div>E-mail</div>
                 <div>Entreprise</div>
                 <div>Groupe</div>
                 <div>Statut</div>
+                <div />
               </div>
 
               {/* Rows */}
               <div className="divide-y divide-csm-gris-clair">
-                {filtered.map((d) => (
-                  <label
-                    key={d.id}
-                    className={`grid grid-cols-1 sm:grid-cols-[40px_1fr_1fr_1fr_1fr_120px] gap-2 px-4 py-3 items-center cursor-pointer transition-colors ${
-                      selected.has(d.id)
-                        ? "bg-csm-action/5"
-                        : "hover:bg-csm-blanc"
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(d.id)}
-                        onChange={() => toggleOne(d.id)}
-                        className="h-4 w-4 rounded border-csm-gris-clair text-csm-action focus:ring-csm-action"
-                      />
+                {filtered.map((d) =>
+                  editingId === d.id ? (
+                    /* ---- Edit mode ---- */
+                    <div
+                      key={d.id}
+                      className="grid grid-cols-1 sm:grid-cols-[40px_1fr_1fr_1fr_1fr_120px_80px] gap-2 px-4 py-3 items-center bg-csm-action/5"
+                    >
+                      <div />
+                      <div className="flex gap-1">
+                        <input
+                          type="text"
+                          value={editFields.prenom}
+                          onChange={(e) => setEditFields((f) => ({ ...f, prenom: e.target.value }))}
+                          placeholder="Prénom"
+                          className="w-1/2 rounded border border-csm-gris-clair px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-csm-action"
+                        />
+                        <input
+                          type="text"
+                          value={editFields.nom}
+                          onChange={(e) => setEditFields((f) => ({ ...f, nom: e.target.value }))}
+                          placeholder="Nom"
+                          className="w-1/2 rounded border border-csm-gris-clair px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-csm-action"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="email"
+                          value={editFields.email}
+                          onChange={(e) => setEditFields((f) => ({ ...f, email: e.target.value }))}
+                          placeholder="E-mail"
+                          className="w-full rounded border border-csm-gris-clair px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-csm-action"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          value={editFields.entreprise}
+                          onChange={(e) => setEditFields((f) => ({ ...f, entreprise: e.target.value }))}
+                          placeholder="Entreprise"
+                          className="w-full rounded border border-csm-gris-clair px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-csm-action"
+                        />
+                      </div>
+                      <div className="hidden sm:block text-sm text-csm-gris truncate">
+                        {d.groupeNom}
+                      </div>
+                      <div>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            d.statut === "À traiter"
+                              ? "bg-amber-100 text-amber-800"
+                              : d.statut === "Inscrit"
+                              ? "bg-green-100 text-green-800"
+                              : d.statut === "Refusé"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {d.statut || "—"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={saveEdit}
+                          disabled={saving}
+                          className="rounded p-1 text-csm-vert hover:bg-csm-vert-light transition-colors disabled:opacity-50"
+                          title="Enregistrer"
+                        >
+                          {saving ? (
+                            <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelEdit}
+                          disabled={saving}
+                          className="rounded p-1 text-csm-gris hover:bg-gray-100 transition-colors disabled:opacity-50"
+                          title="Annuler"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-sm font-medium text-csm-bleu">
-                        {d.prenom} {d.nom}
-                      </span>
-                      {/* Mobile: show email below name */}
-                      <span className="block sm:hidden text-xs text-csm-gris mt-0.5">
+                  ) : (
+                    /* ---- Display mode ---- */
+                    <div
+                      key={d.id}
+                      className={`grid grid-cols-1 sm:grid-cols-[40px_1fr_1fr_1fr_1fr_120px_80px] gap-2 px-4 py-3 items-center transition-colors ${
+                        selected.has(d.id)
+                          ? "bg-csm-action/5"
+                          : "hover:bg-csm-blanc"
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(d.id)}
+                          onChange={() => toggleOne(d.id)}
+                          className="h-4 w-4 rounded border-csm-gris-clair text-csm-action focus:ring-csm-action cursor-pointer"
+                        />
+                      </div>
+                      <label className="cursor-pointer" onClick={() => toggleOne(d.id)}>
+                        <span className="text-sm font-medium text-csm-bleu">
+                          {d.prenom} {d.nom}
+                        </span>
+                        <span className="block sm:hidden text-xs text-csm-gris mt-0.5">
+                          {d.email}
+                        </span>
+                      </label>
+                      <div className="hidden sm:block text-sm text-csm-bleu truncate">
                         {d.email}
-                      </span>
+                      </div>
+                      <div className="hidden sm:block text-sm text-csm-gris truncate">
+                        {d.entreprise}
+                      </div>
+                      <div className="hidden sm:block text-sm text-csm-gris truncate">
+                        {d.groupeNom}
+                      </div>
+                      <div>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            d.statut === "À traiter"
+                              ? "bg-amber-100 text-amber-800"
+                              : d.statut === "Inscrit"
+                              ? "bg-green-100 text-green-800"
+                              : d.statut === "Refusé"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {d.statut || "—"}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <button
+                          type="button"
+                          onClick={() => startEdit(d)}
+                          className="rounded p-1 text-csm-gris hover:text-csm-action hover:bg-csm-action/10 transition-colors"
+                          title="Modifier"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
-                    <div className="hidden sm:block text-sm text-csm-bleu truncate">
-                      {d.email}
-                    </div>
-                    <div className="hidden sm:block text-sm text-csm-gris truncate">
-                      {d.entreprise}
-                    </div>
-                    <div className="hidden sm:block text-sm text-csm-gris truncate">
-                      {d.groupeNom}
-                    </div>
-                    <div>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          d.statut === "À traiter"
-                            ? "bg-amber-100 text-amber-800"
-                            : d.statut === "Inscrit"
-                            ? "bg-green-100 text-green-800"
-                            : d.statut === "Refusé"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {d.statut || "—"}
-                      </span>
-                    </div>
-                  </label>
-                ))}
+                  )
+                )}
               </div>
             </>
           )}

@@ -90,3 +90,26 @@ export async function getDemandesByFormation(formationId: string): Promise<Deman
 
   return results;
 }
+
+export async function updateDemande(
+  pageId: string,
+  fields: { nom?: string; prenom?: string; email?: string; entreprise?: string }
+) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const properties: Record<string, any> = {};
+
+  if (fields.nom !== undefined) {
+    properties["Nom"] = { title: [{ text: { content: fields.nom } }] };
+  }
+  if (fields.prenom !== undefined) {
+    properties["Prénom"] = { rich_text: [{ text: { content: fields.prenom } }] };
+  }
+  if (fields.email !== undefined) {
+    properties["E-mail"] = { email: fields.email };
+  }
+  if (fields.entreprise !== undefined) {
+    properties["Entreprise"] = { rich_text: [{ text: { content: fields.entreprise } }] };
+  }
+
+  await notion.pages.update({ page_id: pageId, properties });
+}
