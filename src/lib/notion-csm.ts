@@ -3,7 +3,7 @@ import type { DemandeInscription } from "@/types/csm";
 
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 
-const DATABASE_ID = process.env.NOTION_DATABASE_ID!;
+const DATABASE_ID = process.env.NOTION_DEMANDES_DB_ID || process.env.NOTION_DATABASE_ID!;
 
 function extractPlainText(prop: unknown): string {
   const p = prop as { type: string; title?: { plain_text: string }[]; rich_text?: { plain_text: string }[]; email?: string | null; select?: { name: string } | null };
