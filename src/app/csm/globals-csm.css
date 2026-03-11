@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-csm-bleu: #19304c;
+  --color-csm-bleu-light: #244166;
+  --color-csm-action: #2b8bcc;
+  --color-csm-action-hover: #2479b0;
+  --color-csm-vert: #009683;
+  --color-csm-vert-light: #e8f5f3;
+  --color-csm-gris: #7f8a9d;
+  --color-csm-gris-clair: #e2e6e7;
+  --color-csm-blanc: #f7f8f8;
+  --color-csm-orange: #e8590c;
+  --color-csm-orange-light: #fff4e6;
+}
