@@ -31,7 +31,6 @@ export async function getDemandesByFormation(formationId: string): Promise<Deman
         property: "📚 Formation",
         relation: { contains: formationId },
       },
-      sorts: [{ timestamp: "created_time", direction: "descending" }],
       ...(cursor ? { start_cursor: cursor } : {}),
     });
 
