@@ -15,9 +15,11 @@ export async function GET(request: NextRequest) {
     const demandes = await getDemandesByFormation(formationId);
     return NextResponse.json({ demandes });
   } catch (err) {
-    console.error("Erreur API csm:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error("Erreur API csm:", message, stack);
     return NextResponse.json(
-      { error: "Erreur lors de la récupération des demandes." },
+      { error: "Erreur lors de la récupération des demandes.", detail: message },
       { status: 500 }
     );
   }
