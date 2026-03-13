@@ -133,7 +133,6 @@ export default function ParticipantForm({
         const errs: Partial<Record<keyof Participant, string>> = {};
         if (!p.prenom.trim()) errs.prenom = "Requis";
         if (!p.nom.trim()) errs.nom = "Requis";
-        if (!p.entreprise.trim()) errs.entreprise = "Requis";
         if (!p.email.trim()) errs.email = "Requis";
         else if (!EMAIL_REGEX.test(p.email)) errs.email = "E-mail invalide";
         return Object.keys(errs).length > 0 ? errs : null;

@@ -24,8 +24,8 @@ export default function ParticipantRow({
   const fields: { key: keyof Participant; label: string; type: string; placeholder: string }[] = [
     { key: "prenom", label: "Prénom", type: "text", placeholder: "Jean" },
     { key: "nom", label: "Nom", type: "text", placeholder: "Dupont" },
-    { key: "entreprise", label: "Entreprise/Entité", type: "text", placeholder: "Société ABC" },
     { key: "email", label: "E-mail", type: "email", placeholder: "jean.dupont@exemple.com" },
+    { key: "entreprise", label: "Entreprise/Entité (facultatif)", type: "text", placeholder: "Société ABC" },
   ];
 
   return (
