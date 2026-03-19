@@ -84,7 +84,7 @@ export default function ParticipantForm({
       const updated = [...prev];
       for (let i = 0; i < rows.length; i++) {
         const targetIndex = startIndex + i;
-        const [prenom = "", nom = "", entreprise = "", email = ""] = rows[i];
+        const [prenom = "", nom = "", email = "", entreprise = ""] = rows[i];
         if (targetIndex < updated.length) {
           updated[targetIndex] = {
             ...updated[targetIndex],
@@ -324,7 +324,7 @@ export default function ParticipantForm({
 
               {/* Paste hint */}
               <p className="text-xs text-gray-400">
-                Astuce : copiez vos colonnes Prénom, Nom, Entreprise/Entité, E-mail depuis Excel et
+                Astuce : copiez vos colonnes Prénom, Nom, E-mail, Entreprise/Entité depuis Excel et
                 collez dans le champ Prénom pour remplir automatiquement.
               </p>
 
