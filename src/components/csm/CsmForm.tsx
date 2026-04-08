@@ -440,7 +440,7 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                             d.statut === "À traiter"
                               ? "bg-amber-100 text-amber-800"
-                              : d.statut === "Inscrit"
+                              : d.statut === "Inscrit(e)"
                               ? "bg-green-100 text-green-800"
                               : d.statut === "Refusé"
                               ? "bg-red-100 text-red-800"
@@ -522,7 +522,7 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                             d.statut === "À traiter"
                               ? "bg-amber-100 text-amber-800"
-                              : d.statut === "Inscrit"
+                              : d.statut === "Inscrit(e)"
                               ? "bg-green-100 text-green-800"
                               : d.statut === "Refusé"
                               ? "bg-red-100 text-red-800"
@@ -543,7 +543,7 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                             <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                           </svg>
                         </button>
-                        {d.statut === "Inscrit" && (
+                        {d.statut === "Inscrit(e)" && (
                           <button
                             type="button"
                             onClick={() => openUnsub(d)}
