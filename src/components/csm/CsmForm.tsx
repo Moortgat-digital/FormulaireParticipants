@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { DemandeInscription, CsmWebhookPayload } from "@/types/csm";
+import type { Journee } from "@/types/lieux";
 
 interface CsmFormProps {
   formationId: string;
@@ -25,6 +26,17 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<EditableFields>({ nom: "", prenom: "", email: "", entreprise: "" });
   const [saving, setSaving] = useState(false);
+
+  // Unsubscribe modal state
+  const [unsubTarget, setUnsubTarget] = useState<DemandeInscription | null>(null);
+  const [unsubJournees, setUnsubJournees] = useState<Journee[]>([]);
+  const [unsubSelected, setUnsubSelected] = useState<Set<string>>(new Set());
+  const [unsubAll, setUnsubAll] = useState(true);
+  const [unsubLoading, setUnsubLoading] = useState(false);
+  const [unsubSending, setUnsubSending] = useState(false);
+
+  // Cache journées per groupeId to avoid redundant fetches
+  const [journeesCache, setJourneesCache] = useState<Record<string, Journee[]>>({});
 
   const fetchDemandes = useCallback(async () => {
     setLoading(true);
@@ -154,6 +166,79 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
     } finally {
       setSaving(false);
     }
+  }
+
+  // ---- Unsubscribe modal logic ----
+
+  async function openUnsub(d: DemandeInscription) {
+    setUnsubTarget(d);
+    setUnsubAll(true);
+    setUnsubSelected(new Set());
+    setUnsubSending(false);
+
+    // Use cache if available
+    if (journeesCache[d.groupeId]) {
+      setUnsubJournees(journeesCache[d.groupeId]);
+      return;
+    }
+
+    setUnsubLoading(true);
+    try {
+      const res = await fetch(`/api/csm/journees?groupeId=${encodeURIComponent(d.groupeId)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur");
+      setUnsubJournees(data.journees);
+      setJourneesCache((prev) => ({ ...prev, [d.groupeId]: data.journees }));
+    } catch {
+      setUnsubJournees([]);
+    } finally {
+      setUnsubLoading(false);
+    }
+  }
+
+  function closeUnsub() {
+    setUnsubTarget(null);
+    setUnsubJournees([]);
+    setUnsubSelected(new Set());
+  }
+
+  function toggleUnsubAll(checked: boolean) {
+    setUnsubAll(checked);
+    if (checked) {
+      setUnsubSelected(new Set(unsubJournees.map((j) => j.id)));
+    } else {
+      setUnsubSelected(new Set());
+    }
+  }
+
+  function toggleUnsubJournee(id: string) {
+    setUnsubSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    setUnsubAll(false);
+  }
+
+  function confirmUnsub() {
+    if (!unsubTarget || unsubSelected.size === 0) return;
+    setUnsubSending(true);
+    // UI only — no backend call yet
+    setTimeout(() => {
+      setResult({
+        success: true,
+        message: `Désinscription de ${unsubTarget.prenom} ${unsubTarget.nom} demandée pour ${unsubAll ? "toutes les journées" : `${unsubSelected.size} journée${unsubSelected.size > 1 ? "s" : ""}`}.`,
+      });
+      setUnsubSending(false);
+      closeUnsub();
+    }, 400);
+  }
+
+  function formatJourneeDate(iso: string): string {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   }
 
   // Unique statuts & groupes for filters
@@ -447,7 +532,7 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                           {d.statut || "—"}
                         </span>
                       </div>
-                      <div className="flex items-center">
+                      <div className="flex items-center gap-1">
                         <button
                           type="button"
                           onClick={() => startEdit(d)}
@@ -458,6 +543,18 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                             <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                           </svg>
                         </button>
+                        {d.statut === "Inscrit" && (
+                          <button
+                            type="button"
+                            onClick={() => openUnsub(d)}
+                            className="rounded p-1 text-csm-gris hover:text-csm-orange hover:bg-csm-orange/10 transition-colors"
+                            title="Désinscrire"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     </div>
                   )
@@ -478,6 +575,133 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
           }`}
         >
           {result.message}
+        </div>
+      )}
+
+      {/* Unsubscribe modal */}
+      {unsubTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="mx-4 w-full max-w-lg rounded-xl bg-white shadow-2xl">
+            {/* Modal header */}
+            <div className="border-b border-csm-gris-clair px-6 py-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-csm-bleu">Désinscrire un participant</h3>
+                <button
+                  type="button"
+                  onClick={closeUnsub}
+                  className="rounded p-1 text-csm-gris hover:bg-gray-100 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+              <p className="mt-1 text-sm text-csm-gris">
+                <span className="font-medium text-csm-bleu">{unsubTarget.prenom} {unsubTarget.nom}</span>
+                {" — "}{unsubTarget.groupeNom}
+              </p>
+            </div>
+
+            {/* Modal body */}
+            <div className="px-6 py-4">
+              {unsubLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <svg className="h-5 w-5 animate-spin text-csm-action" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  <span className="ml-2 text-sm text-csm-gris">Chargement des journées...</span>
+                </div>
+              ) : unsubJournees.length === 0 ? (
+                <p className="py-4 text-center text-sm text-csm-gris">
+                  Aucune journée trouvée pour ce groupe.
+                </p>
+              ) : (
+                <>
+                  {/* Toggle all */}
+                  <label className="flex items-center gap-3 rounded-lg border border-csm-orange/30 bg-csm-orange-light px-4 py-3 cursor-pointer mb-3">
+                    <input
+                      type="checkbox"
+                      checked={unsubAll}
+                      onChange={(e) => toggleUnsubAll(e.target.checked)}
+                      className="h-4 w-4 rounded border-csm-gris-clair text-csm-orange focus:ring-csm-orange"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-csm-orange">
+                        Toutes les journées
+                      </span>
+                      <span className="ml-1 text-xs text-csm-gris">
+                        ({unsubJournees.length} journée{unsubJournees.length > 1 ? "s" : ""})
+                      </span>
+                    </div>
+                  </label>
+
+                  {/* Individual journées */}
+                  <div className="max-h-60 overflow-y-auto rounded-lg border border-csm-gris-clair divide-y divide-csm-gris-clair">
+                    {unsubJournees.map((j) => (
+                      <label
+                        key={j.id}
+                        className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${
+                          unsubSelected.has(j.id) ? "bg-csm-orange/5" : "hover:bg-csm-blanc"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={unsubSelected.has(j.id)}
+                          onChange={() => toggleUnsubJournee(j.id)}
+                          className="h-4 w-4 rounded border-csm-gris-clair text-csm-orange focus:ring-csm-orange"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium text-csm-bleu">
+                            {j.nom || j.code}
+                          </span>
+                          {j.dateDebut && (
+                            <span className="ml-2 text-xs text-csm-gris">
+                              {formatJourneeDate(j.dateDebut)}
+                            </span>
+                          )}
+                        </div>
+                        {j.mode && (
+                          <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-csm-gris">
+                            {j.mode}
+                          </span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Modal footer */}
+            <div className="flex items-center justify-end gap-3 border-t border-csm-gris-clair px-6 py-4">
+              <button
+                type="button"
+                onClick={closeUnsub}
+                className="rounded-lg border border-csm-gris-clair px-4 py-2 text-sm font-medium text-csm-gris transition-colors hover:bg-csm-blanc"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={confirmUnsub}
+                disabled={unsubSelected.size === 0 || unsubSending}
+                className="rounded-lg bg-csm-orange px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-csm-orange/90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {unsubSending ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Envoi...
+                  </span>
+                ) : (
+                  `Désinscrire${unsubSelected.size > 0 ? ` (${unsubSelected.size})` : ""}`
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
