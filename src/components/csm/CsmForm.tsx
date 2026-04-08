@@ -221,18 +221,43 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
     setUnsubAll(false);
   }
 
-  function confirmUnsub() {
+  async function confirmUnsub() {
     if (!unsubTarget || unsubSelected.size === 0) return;
     setUnsubSending(true);
-    // UI only — no backend call yet
-    setTimeout(() => {
-      setResult({
-        success: true,
-        message: `Désinscription de ${unsubTarget.prenom} ${unsubTarget.nom} demandée pour ${unsubAll ? "toutes les journées" : `${unsubSelected.size} journée${unsubSelected.size > 1 ? "s" : ""}`}.`,
+    setResult(null);
+
+    const payload = {
+      participant: {
+        id: unsubTarget.id,
+        nom: unsubTarget.nom,
+        prenom: unsubTarget.prenom,
+        email: unsubTarget.email,
+        groupeId: unsubTarget.groupeId,
+        groupeNom: unsubTarget.groupeNom,
+      },
+      journees: [...unsubSelected],
+      toutes: unsubAll,
+    };
+
+    try {
+      const res = await fetch("/api/csm/webhook-unsub", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
-      setUnsubSending(false);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur webhook");
+      setResult({ success: true, message: data.message });
       closeUnsub();
-    }, 400);
+      fetchDemandes();
+    } catch (err) {
+      setResult({
+        success: false,
+        message: err instanceof Error ? err.message : "Erreur lors de la désinscription.",
+      });
+    } finally {
+      setUnsubSending(false);
+    }
   }
 
   function formatJourneeDate(iso: string): string {
