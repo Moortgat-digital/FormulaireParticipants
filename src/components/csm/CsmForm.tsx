@@ -178,7 +178,9 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
 
     // Use cache if available
     if (journeesCache[d.groupeId]) {
-      setUnsubJournees(journeesCache[d.groupeId]);
+      const cached = journeesCache[d.groupeId];
+      setUnsubJournees(cached);
+      setUnsubSelected(new Set(cached.map((j) => j.id)));
       return;
     }
 
@@ -188,6 +190,7 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Erreur");
       setUnsubJournees(data.journees);
+      setUnsubSelected(new Set(data.journees.map((j: Journee) => j.id)));
       setJourneesCache((prev) => ({ ...prev, [d.groupeId]: data.journees }));
     } catch {
       setUnsubJournees([]);
