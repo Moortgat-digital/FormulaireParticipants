@@ -12,6 +12,9 @@ interface ParticipantData {
   nom: string;
   entreprise: string;
   email: string;
+  prenomNplus1?: string;
+  nomNplus1?: string;
+  emailNplus1?: string;
 }
 
 export async function getPageTitle(pageId: string): Promise<string> {
@@ -101,6 +104,22 @@ export async function createParticipantPage(
       select: { name: "À traiter" },
     },
   };
+
+  if (participant.prenomNplus1) {
+    properties["Prénom du N+1"] = {
+      rich_text: [{ text: { content: participant.prenomNplus1 } }],
+    };
+  }
+  if (participant.nomNplus1) {
+    properties["Nom du N+1"] = {
+      rich_text: [{ text: { content: participant.nomNplus1 } }],
+    };
+  }
+  if (participant.emailNplus1) {
+    properties["E-mail du N+1"] = {
+      email: participant.emailNplus1,
+    };
+  }
 
   if (submittedBy) {
     properties["Soumis par"] = { email: submittedBy };

@@ -4,6 +4,10 @@ export interface Participant {
   nom: string;
   entreprise: string;
   email: string;
+  showNplus1: boolean;
+  prenomNplus1: string;
+  nomNplus1: string;
+  emailNplus1: string;
 }
 
 export interface Group {

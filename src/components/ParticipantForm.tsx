@@ -20,6 +20,10 @@ function createEmptyParticipant(): Participant {
     nom: "",
     entreprise: "",
     email: "",
+    showNplus1: false,
+    prenomNplus1: "",
+    nomNplus1: "",
+    emailNplus1: "",
   };
 }
 
@@ -66,7 +70,11 @@ export default function ParticipantForm({
   function handleChange(index: number, field: keyof Participant, value: string) {
     setParticipants((prev) => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
+      if (field === "showNplus1") {
+        updated[index] = { ...updated[index], showNplus1: value === "true" };
+      } else {
+        updated[index] = { ...updated[index], [field]: value };
+      }
       return updated;
     });
     setErrors((prev) => {
@@ -100,6 +108,10 @@ export default function ParticipantForm({
             nom: nom.trim(),
             entreprise: entreprise.trim(),
             email: email.trim(),
+            showNplus1: false,
+            prenomNplus1: "",
+            nomNplus1: "",
+            emailNplus1: "",
           });
         }
       }
@@ -150,11 +162,15 @@ export default function ParticipantForm({
     setResult(null);
 
     const payload: SubmitPayload = {
-      participants: participants.map(({ nom, prenom, entreprise, email }) => ({
+      participants: participants.map(({ nom, prenom, entreprise, email, showNplus1, prenomNplus1, nomNplus1, emailNplus1 }) => ({
         prenom: prenom.trim(),
         nom: nom.trim(),
         entreprise: entreprise.trim(),
         email: email.trim().toLowerCase(),
+        showNplus1,
+        prenomNplus1: showNplus1 ? prenomNplus1.trim() : "",
+        nomNplus1: showNplus1 ? nomNplus1.trim() : "",
+        emailNplus1: showNplus1 ? emailNplus1.trim().toLowerCase() : "",
       })),
       formationId,
       groupId: selectedGroupId,
