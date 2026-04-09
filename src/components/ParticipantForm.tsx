@@ -39,7 +39,7 @@ export default function ParticipantForm({
   // Step 1 state
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [selectedGroupName, setSelectedGroupName] = useState("");
-  const [participantCount, setParticipantCount] = useState(1);
+  const [participantCount, setParticipantCount] = useState<number | "">(1);
 
   // Step 2 state
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -51,7 +51,8 @@ export default function ParticipantForm({
 
   function handleContinue() {
     if (!selectedGroupId) return;
-    const count = Math.max(1, Math.min(50, participantCount));
+    const raw = typeof participantCount === "number" ? participantCount : 1;
+    const count = Math.max(1, Math.min(50, raw));
     setParticipants(
       Array.from({ length: count }, () => createEmptyParticipant())
     );
@@ -234,7 +235,7 @@ export default function ParticipantForm({
 
       if (data.success) {
         setParticipants(
-          Array.from({ length: participantCount }, () => createEmptyParticipant())
+          Array.from({ length: participantCount || 1 }, () => createEmptyParticipant())
         );
         setErrors([]);
       }
@@ -252,7 +253,6 @@ export default function ParticipantForm({
     <div className="mx-auto max-w-7xl px-4">
       {/* Title */}
       <div className="mb-6">
-        <p className="mb-1 text-xs font-medium text-orange-600">[Test - visible admin]</p>
         <h2
           className="text-2xl font-semibold text-gray-900"
           style={{ fontFamily: "var(--font-dm-sans), sans-serif" }}
@@ -327,9 +327,10 @@ export default function ParticipantForm({
                     min={1}
                     max={50}
                     value={participantCount}
-                    onChange={(e) =>
-                      setParticipantCount(parseInt(e.target.value) || 1)
-                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setParticipantCount(val === "" ? "" : parseInt(val) || 0);
+                    }}
                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 hover:border-gray-400"
                   />
                 </div>
@@ -338,7 +339,7 @@ export default function ParticipantForm({
                 <button
                   type="button"
                   onClick={handleContinue}
-                  disabled={!selectedGroupId || participantCount < 1}
+                  disabled={!selectedGroupId || !participantCount || participantCount < 1}
                   className="w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-400"
                 >
                   Continuer
