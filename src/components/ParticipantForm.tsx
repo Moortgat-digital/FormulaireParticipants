@@ -130,6 +130,50 @@ export default function ParticipantForm({
     if (result) setResult(null);
   }
 
+  function handleCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = evt.target?.result as string;
+      if (!text) return;
+
+      const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
+      // Skip header row
+      const dataLines = lines.slice(1);
+      if (dataLines.length === 0) return;
+
+      const newParticipants: Participant[] = dataLines.map((line) => {
+        // Support both ; and , as separators
+        const sep = line.includes(";") ? ";" : ",";
+        const cols = line.split(sep).map((c) => c.trim());
+        const [prenom = "", nom = "", email = "", entreprise = "", prenomN1 = "", nomN1 = "", emailN1 = ""] = cols;
+        const hasNplus1 = !!(prenomN1 || nomN1 || emailN1);
+        return {
+          id: crypto.randomUUID(),
+          prenom,
+          nom,
+          email,
+          entreprise,
+          showNplus1: hasNplus1,
+          prenomNplus1: prenomN1,
+          nomNplus1: nomN1,
+          emailNplus1: emailN1,
+        };
+      });
+
+      setParticipants(newParticipants);
+      setParticipantCount(newParticipants.length);
+      setErrors([]);
+      if (result) setResult(null);
+    };
+    reader.readAsText(file, "UTF-8");
+
+    // Reset input so re-importing the same file works
+    e.target.value = "";
+  }
+
   function handleAddRow() {
     setParticipants((prev) => [...prev, createEmptyParticipant()]);
   }
@@ -338,11 +382,42 @@ export default function ParticipantForm({
                 </div>
               </div>
 
-              {/* Paste hint */}
-              <p className="text-xs text-gray-400">
-                Astuce : copiez vos colonnes Prénom, Nom, E-mail, Entreprise/Entité depuis Excel et
-                collez dans le champ Prénom pour remplir automatiquement.
-              </p>
+              {/* Import hints */}
+              <div className="rounded-lg border border-blue-100 bg-blue-50/50 px-4 py-3 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-blue-800">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  Remplissage rapide
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="inline-flex items-center gap-2 rounded-md border border-blue-200 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 cursor-pointer transition-colors hover:bg-blue-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Importer un CSV
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleCsvImport}
+                      className="hidden"
+                    />
+                  </label>
+                  <a
+                    href="/trame-participants.csv"
+                    download
+                    className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                    Trame CSV
+                  </a>
+                </div>
+                <p className="text-xs text-blue-600/70">
+                  Ou copiez-collez directement depuis Excel : sélectionnez vos colonnes Prénom, Nom, E-mail, Entreprise et collez dans le premier champ Prénom.
+                </p>
+              </div>
 
               {/* Participant rows */}
               <div className="space-y-3">
