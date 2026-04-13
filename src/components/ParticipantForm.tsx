@@ -135,11 +135,7 @@ export default function ParticipantForm({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const text = evt.target?.result as string;
-      if (!text) return;
-
+    function parseCsv(text: string) {
       const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
       // Skip header row
       const dataLines = lines.slice(1);
@@ -168,6 +164,24 @@ export default function ParticipantForm({
       setParticipantCount(newParticipants.length);
       setErrors([]);
       if (result) setResult(null);
+    }
+
+    // Try UTF-8 first; if replacement characters appear, re-read as windows-1252 (Excel default)
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = evt.target?.result as string;
+      if (!text) return;
+
+      if (text.includes("\uFFFD")) {
+        const fallbackReader = new FileReader();
+        fallbackReader.onload = (evt2) => {
+          const text2 = evt2.target?.result as string;
+          if (text2) parseCsv(text2);
+        };
+        fallbackReader.readAsText(file, "windows-1252");
+      } else {
+        parseCsv(text);
+      }
     };
     reader.readAsText(file, "UTF-8");
 
