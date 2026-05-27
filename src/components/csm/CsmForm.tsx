@@ -396,6 +396,7 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
   }
 
   function renderDupBadge(d: DemandeInscription) {
+    if (d.statut !== "À traiter") return null;
     const dup = dupMap.get(d.id);
     if (!dup) return null;
     const match = demandesById.get(dup.matchId);
