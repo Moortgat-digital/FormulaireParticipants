@@ -113,3 +113,19 @@ export async function updateDemande(
 
   await notion.pages.update({ page_id: pageId, properties });
 }
+
+export async function deleteDemande(pageId: string): Promise<void> {
+  // Garde-fou : on ne supprime jamais une inscription déjà validée.
+  const page = await notion.pages.retrieve({ page_id: pageId });
+  if ("properties" in page) {
+    const statut = extractPlainText((page.properties as Record<string, unknown>)["Statut"]);
+    if (statut === "Inscrit(e)") {
+      throw new Error(
+        "Impossible de supprimer une inscription validée. Utilisez la désinscription."
+      );
+    }
+  }
+
+  // Archive la page (suppression douce, restaurable dans Notion).
+  await notion.pages.update({ page_id: pageId, archived: true });
+}

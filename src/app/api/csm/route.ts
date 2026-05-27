@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDemandesByFormation, updateDemande } from "@/lib/notion-csm";
+import { getDemandesByFormation, updateDemande, deleteDemande } from "@/lib/notion-csm";
 
 export async function GET(request: NextRequest) {
   const formationId = request.nextUrl.searchParams.get("formationId");
@@ -44,6 +44,29 @@ export async function PATCH(request: Request) {
     console.error("Erreur API csm PATCH:", message);
     return NextResponse.json(
       { error: "Erreur lors de la mise à jour.", detail: message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const pageId = request.nextUrl.searchParams.get("pageId");
+
+  if (!pageId) {
+    return NextResponse.json(
+      { error: "Le paramètre pageId est requis." },
+      { status: 400 }
+    );
+  }
+
+  try {
+    await deleteDemande(pageId);
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Erreur API csm DELETE:", message);
+    return NextResponse.json(
+      { error: "Erreur lors de la suppression.", detail: message },
       { status: 500 }
     );
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import type { DemandeInscription, CsmWebhookPayload } from "@/types/csm";
 import type { Journee } from "@/types/lieux";
 
@@ -10,6 +10,70 @@ interface CsmFormProps {
 }
 
 type EditableFields = Pick<DemandeInscription, "nom" | "prenom" | "email" | "entreprise">;
+
+// ---- Détection de doublons ----
+
+interface DupInfo {
+  confidence: number; // 0-100
+  matchId: string;
+}
+
+function normEmail(s: string): string {
+  return s.trim().toLowerCase();
+}
+
+function normName(s: string): string {
+  return s
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // retire les accents
+    .replace(/\s+/g, " ");
+}
+
+function levenshtein(a: string, b: string): number {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 0; i < a.length; i++) {
+    const curr = [i + 1];
+    for (let j = 0; j < b.length; j++) {
+      const cost = a[i] === b[j] ? 0 : 1;
+      curr[j + 1] = Math.min(curr[j] + 1, prev[j + 1] + 1, prev[j] + cost);
+    }
+    prev = curr;
+  }
+  return prev[b.length];
+}
+
+function similarity(a: string, b: string): number {
+  if (!a && !b) return 1;
+  const maxLen = Math.max(a.length, b.length);
+  if (maxLen === 0) return 1;
+  return 1 - levenshtein(a, b) / maxLen;
+}
+
+// Confiance que deux demandes soient un doublon (mail + groupe = critère fort,
+// tolérance aux fautes de frappe sur le nom/prénom).
+function dupConfidence(a: DemandeInscription, b: DemandeInscription): number {
+  const emailSim =
+    a.email && b.email
+      ? normEmail(a.email) === normEmail(b.email)
+        ? 1
+        : similarity(normEmail(a.email), normEmail(b.email))
+      : 0;
+  const nameSim = similarity(
+    normName(`${a.prenom} ${a.nom}`),
+    normName(`${b.prenom} ${b.nom}`)
+  );
+  // Le groupe identique est requis pour une forte confiance ; sinon on divise par deux.
+  const groupeFactor = a.groupeId && b.groupeId && a.groupeId === b.groupeId ? 1 : 0.5;
+
+  return Math.round(100 * groupeFactor * (0.7 * emailSim + 0.3 * nameSim));
+}
+
+const DUP_THRESHOLD = 60; // % minimum pour afficher l'indicateur
 
 export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
   const [demandes, setDemandes] = useState<DemandeInscription[]>([]);
@@ -26,6 +90,10 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<EditableFields>({ nom: "", prenom: "", email: "", entreprise: "" });
   const [saving, setSaving] = useState(false);
+
+  // Delete confirmation state
+  const [deleteTarget, setDeleteTarget] = useState<DemandeInscription | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Unsubscribe modal state
   const [unsubTarget, setUnsubTarget] = useState<DemandeInscription | null>(null);
@@ -72,6 +140,30 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
     }
     return true;
   });
+
+  // Carte des doublons : pour chaque demande, le meilleur score de ressemblance
+  // avec une autre demande (calculée sur l'ensemble, pas seulement le filtre).
+  const dupMap = useMemo(() => {
+    const map = new Map<string, DupInfo>();
+    for (let i = 0; i < demandes.length; i++) {
+      for (let j = i + 1; j < demandes.length; j++) {
+        const score = dupConfidence(demandes[i], demandes[j]);
+        if (score < DUP_THRESHOLD) continue;
+        const a = demandes[i];
+        const b = demandes[j];
+        const prevA = map.get(a.id);
+        if (!prevA || score > prevA.confidence) map.set(a.id, { confidence: score, matchId: b.id });
+        const prevB = map.get(b.id);
+        if (!prevB || score > prevB.confidence) map.set(b.id, { confidence: score, matchId: a.id });
+      }
+    }
+    return map;
+  }, [demandes]);
+
+  const demandesById = useMemo(
+    () => new Map(demandes.map((d) => [d.id, d])),
+    [demandes]
+  );
 
   const allFilteredSelected =
     filtered.length > 0 && filtered.every((d) => selected.has(d.id));
@@ -168,6 +260,46 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
     }
   }
 
+  // ---- Delete logic ----
+
+  function openDelete(d: DemandeInscription) {
+    setDeleteTarget(d);
+  }
+
+  function closeDelete() {
+    if (deleting) return;
+    setDeleteTarget(null);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    const target = deleteTarget;
+    setDeleting(true);
+    setResult(null);
+    try {
+      const res = await fetch(`/api/csm?pageId=${encodeURIComponent(target.id)}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur");
+      setDemandes((prev) => prev.filter((d) => d.id !== target.id));
+      setSelected((prev) => {
+        const next = new Set(prev);
+        next.delete(target.id);
+        return next;
+      });
+      setResult({ success: true, message: `Demande de ${target.prenom} ${target.nom} supprimée.` });
+      setDeleteTarget(null);
+    } catch (err) {
+      setResult({
+        success: false,
+        message: err instanceof Error ? err.message : "Erreur lors de la suppression.",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   // ---- Unsubscribe modal logic ----
 
   async function openUnsub(d: DemandeInscription) {
@@ -261,6 +393,27 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
     } finally {
       setUnsubSending(false);
     }
+  }
+
+  function renderDupBadge(d: DemandeInscription) {
+    const dup = dupMap.get(d.id);
+    if (!dup) return null;
+    const match = demandesById.get(dup.matchId);
+    const strong = dup.confidence >= 85;
+    return (
+      <span
+        className={`ml-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold align-middle ${
+          strong ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"
+        }`}
+        title={
+          match
+            ? `Doublon probable de ${match.prenom} ${match.nom}${match.statut ? ` (${match.statut})` : ""}`
+            : "Doublon probable"
+        }
+      >
+        ⚠ Doublon {dup.confidence}%
+      </span>
+    );
   }
 
   function formatJourneeDate(iso: string): string {
@@ -532,6 +685,7 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                         <span className="text-sm font-medium text-csm-bleu">
                           {d.prenom} {d.nom}
                         </span>
+                        {renderDupBadge(d)}
                         <span className="block sm:hidden text-xs text-csm-gris mt-0.5">
                           {d.email}
                         </span>
@@ -562,16 +716,28 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                       </div>
                       <div className="flex items-center gap-1">
                         {d.statut !== "Inscrit(e)" && (
-                          <button
-                            type="button"
-                            onClick={() => startEdit(d)}
-                            className="rounded p-1 text-csm-gris hover:text-csm-action hover:bg-csm-action/10 transition-colors"
-                            title="Modifier"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                            </svg>
-                          </button>
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => startEdit(d)}
+                              className="rounded p-1 text-csm-gris hover:text-csm-action hover:bg-csm-action/10 transition-colors"
+                              title="Modifier"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openDelete(d)}
+                              className="rounded p-1 text-csm-gris hover:text-csm-orange hover:bg-csm-orange/10 transition-colors"
+                              title="Supprimer la demande"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                              </svg>
+                            </button>
+                          </>
                         )}
                         {d.statut === "Inscrit(e)" && (
                           <button
@@ -605,6 +771,58 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
           }`}
         >
           {result.message}
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="mx-4 w-full max-w-md rounded-xl bg-white shadow-2xl">
+            <div className="border-b border-csm-gris-clair px-6 py-4">
+              <h3 className="text-lg font-semibold text-csm-bleu">Supprimer la demande</h3>
+            </div>
+            <div className="px-6 py-4">
+              <p className="text-sm text-csm-gris">
+                Voulez-vous vraiment supprimer la demande d&apos;inscription de{" "}
+                <span className="font-medium text-csm-bleu">
+                  {deleteTarget.prenom} {deleteTarget.nom}
+                </span>
+                {deleteTarget.groupeNom ? ` (${deleteTarget.groupeNom})` : ""} ?
+              </p>
+              <p className="mt-2 text-xs text-csm-gris">
+                La demande sera archivée dans Notion (restaurable). Cette action ne touche pas aux
+                inscriptions déjà validées.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 border-t border-csm-gris-clair px-6 py-4">
+              <button
+                type="button"
+                onClick={closeDelete}
+                disabled={deleting}
+                className="rounded-lg border border-csm-gris-clair px-4 py-2 text-sm font-medium text-csm-gris transition-colors hover:bg-csm-blanc disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="rounded-lg bg-csm-orange px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-csm-orange/90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deleting ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Suppression...
+                  </span>
+                ) : (
+                  "Supprimer"
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
