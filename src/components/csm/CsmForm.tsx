@@ -95,6 +95,10 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
   const [deleteTarget, setDeleteTarget] = useState<DemandeInscription | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Bulk delete confirmation state
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
   // Unsubscribe modal state
   const [unsubTarget, setUnsubTarget] = useState<DemandeInscription | null>(null);
   const [unsubJournees, setUnsubJournees] = useState<Journee[]>([]);
@@ -167,6 +171,11 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
 
   const allFilteredSelected =
     filtered.length > 0 && filtered.every((d) => selected.has(d.id));
+
+  // Demandes sélectionnées éligibles à la suppression (uniquement "À traiter").
+  const selectedDeletable = demandes.filter(
+    (d) => selected.has(d.id) && d.statut === "À traiter"
+  );
 
   function toggleAll() {
     if (allFilteredSelected) {
@@ -298,6 +307,45 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
     } finally {
       setDeleting(false);
     }
+  }
+
+  async function confirmBulkDelete() {
+    const targets = demandes.filter((d) => selected.has(d.id) && d.statut === "À traiter");
+    if (targets.length === 0) return;
+    setBulkDeleting(true);
+    setResult(null);
+
+    const deletedIds: string[] = [];
+    const failed: string[] = [];
+    for (const t of targets) {
+      try {
+        const res = await fetch(`/api/csm?pageId=${encodeURIComponent(t.id)}`, {
+          method: "DELETE",
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Erreur");
+        deletedIds.push(t.id);
+      } catch {
+        failed.push(`${t.prenom} ${t.nom}`);
+      }
+    }
+
+    const deletedSet = new Set(deletedIds);
+    setDemandes((prev) => prev.filter((d) => !deletedSet.has(d.id)));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const id of deletedIds) next.delete(id);
+      return next;
+    });
+    setResult({
+      success: failed.length === 0,
+      message:
+        failed.length === 0
+          ? `${deletedIds.length} demande${deletedIds.length > 1 ? "s" : ""} supprimée${deletedIds.length > 1 ? "s" : ""}.`
+          : `${deletedIds.length} supprimée(s), ${failed.length} en échec : ${failed.join(", ")}.`,
+    });
+    setBulkDeleting(false);
+    setBulkDeleteOpen(false);
   }
 
   // ---- Unsubscribe modal logic ----
@@ -539,24 +587,37 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                       : `${filtered.length} demande${filtered.length > 1 ? "s" : ""}`}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleSend}
-                  disabled={selected.size === 0 || sending}
-                  className="rounded-lg bg-csm-action px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-csm-action-hover focus:outline-none focus:ring-2 focus:ring-csm-action focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {sending ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      Envoi...
-                    </span>
-                  ) : (
-                    `Valider ${selected.size > 0 ? `(${selected.size})` : ""}`
+                <div className="flex items-center gap-2">
+                  {selectedDeletable.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setBulkDeleteOpen(true)}
+                      disabled={bulkDeleting}
+                      className="rounded-lg border border-csm-orange/40 px-4 py-2 text-sm font-semibold text-csm-orange transition-colors hover:bg-csm-orange/10 focus:outline-none focus:ring-2 focus:ring-csm-orange focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      title="Supprimer les demandes « À traiter » sélectionnées"
+                    >
+                      Supprimer ({selectedDeletable.length})
+                    </button>
                   )}
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleSend}
+                    disabled={selected.size === 0 || sending}
+                    className="rounded-lg bg-csm-action px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-csm-action-hover focus:outline-none focus:ring-2 focus:ring-csm-action focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {sending ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                        Envoi...
+                      </span>
+                    ) : (
+                      `Valider ${selected.size > 0 ? `(${selected.size})` : ""}`
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Table header */}
@@ -772,6 +833,66 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
           }`}
         >
           {result.message}
+        </div>
+      )}
+
+      {/* Bulk delete confirmation modal */}
+      {bulkDeleteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="mx-4 w-full max-w-md rounded-xl bg-white shadow-2xl">
+            <div className="border-b border-csm-gris-clair px-6 py-4">
+              <h3 className="text-lg font-semibold text-csm-bleu">
+                Supprimer {selectedDeletable.length} demande{selectedDeletable.length > 1 ? "s" : ""}
+              </h3>
+            </div>
+            <div className="px-6 py-4">
+              <p className="text-sm text-csm-gris">
+                Voulez-vous vraiment supprimer{" "}
+                <span className="font-medium text-csm-bleu">
+                  {selectedDeletable.length} demande{selectedDeletable.length > 1 ? "s" : ""}
+                </span>{" "}
+                d&apos;inscription « À traiter » ?
+              </p>
+              {selected.size > selectedDeletable.length && (
+                <p className="mt-2 rounded-md bg-csm-orange-light px-3 py-2 text-xs text-csm-orange">
+                  ⚠ {selected.size - selectedDeletable.length} demande(s) sélectionnée(s) ne sont pas
+                  « À traiter » et seront ignorées.
+                </p>
+              )}
+              <p className="mt-2 text-xs text-csm-gris">
+                Les demandes seront archivées dans Notion (restaurables). Cette action ne touche pas
+                aux inscriptions déjà validées.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 border-t border-csm-gris-clair px-6 py-4">
+              <button
+                type="button"
+                onClick={() => !bulkDeleting && setBulkDeleteOpen(false)}
+                disabled={bulkDeleting}
+                className="rounded-lg border border-csm-gris-clair px-4 py-2 text-sm font-medium text-csm-gris transition-colors hover:bg-csm-blanc disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={confirmBulkDelete}
+                disabled={bulkDeleting || selectedDeletable.length === 0}
+                className="rounded-lg bg-csm-orange px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-csm-orange/90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {bulkDeleting ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Suppression...
+                  </span>
+                ) : (
+                  `Supprimer (${selectedDeletable.length})`
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
