@@ -35,7 +35,7 @@ export async function getPageTitle(pageId: string): Promise<string> {
 
 export async function getGroupsByFormation(
   formationId: string
-): Promise<{ id: string; name: string }[]> {
+): Promise<{ id: string; name: string; dateDebut: string }[]> {
   try {
     const response = await notion.dataSources.query({
       data_source_id: GROUPS_DATABASE_ID,
@@ -45,6 +45,7 @@ export async function getGroupsByFormation(
           contains: formationId,
         },
       },
+      sorts: [{ property: "Début", direction: "ascending" }],
     });
 
     return response.results
@@ -65,7 +66,13 @@ export async function getGroupsByFormation(
             break;
           }
         }
-        return { id: page.id, name };
+        // Date de début du groupe (propriété "Début" de type date dans Notion).
+        const debutProp = (
+          page.properties as Record<string, { type: string; date?: { start?: string } }>
+        )["Début"];
+        const dateDebut =
+          debutProp?.type === "date" ? debutProp.date?.start ?? "" : "";
+        return { id: page.id, name, dateDebut };
       })
       .filter((g) => g.name !== "");
   } catch (err) {

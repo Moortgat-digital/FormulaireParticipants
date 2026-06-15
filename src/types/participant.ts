@@ -13,6 +13,7 @@ export interface Participant {
 export interface Group {
   id: string;
   name: string;
+  dateDebut?: string;
 }
 
 export interface SubmitPayload {

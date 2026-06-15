@@ -13,6 +13,20 @@ interface ParticipantFormProps {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Formate une date ISO (YYYY-MM-DD…) en jj/mm/aaaa, sans décalage de fuseau.
+function formatDateFr(iso: string): string {
+  if (!iso) return "";
+  const [y, m, d] = iso.slice(0, 10).split("-");
+  if (!y || !m || !d) return "";
+  return `${d}/${m}/${y}`;
+}
+
+// Libellé d'un groupe dans la liste déroulante, ex. « Groupe 1 - Début le 12/03/2026 ».
+function groupLabel(g: Group): string {
+  const date = formatDateFr(g.dateDebut ?? "");
+  return date ? `${g.name} - Début le ${date}` : g.name;
+}
+
 function createEmptyParticipant(): Participant {
   return {
     id: crypto.randomUUID(),
@@ -321,7 +335,7 @@ export default function ParticipantForm({
                     <option value="">-- Sélectionnez un groupe --</option>
                     {groups.map((g) => (
                       <option key={g.id} value={g.id}>
-                        {g.name}
+                        {groupLabel(g)}
                       </option>
                     ))}
                   </select>
