@@ -6,10 +6,11 @@ import { useEffect } from "react";
  * Envoie la hauteur du contenu à la fenêtre parente via postMessage afin que
  * l'iframe d'intégration s'ajuste automatiquement — agrandissement ET réduction.
  *
- * On mesure la position du bas réel du contenu (les enfants directs du body),
- * et NON document.documentElement / body.scrollHeight : ces derniers sont
- * plafonnés par la hauteur courante de l'iframe et empêchent toute réduction
- * (l'iframe restait « haute » après le passage d'un contenu long à court).
+ * Mesure via `offsetTop + offsetHeight` des enfants du body : ces propriétés
+ * de mise en page sont indépendantes du viewport ET du défilement, contrairement
+ * à scrollHeight (plafonné par la hauteur de l'iframe) ou getBoundingClientRect
+ * (dépend du scroll) — ce qui évite le plafonnement et les boucles de rétroaction
+ * où l'iframe « regrossit » toute seule.
  */
 export default function IframeResizer() {
   useEffect(() => {
@@ -19,17 +20,17 @@ export default function IframeResizer() {
     function measure(): number {
       const body = document.body;
       if (!body) return 0;
-      // Bas du contenu = plus grande valeur de `bottom` parmi les enfants du
-      // body (relatif au haut du viewport, contenu non scrollé en iframe).
-      let bottom = 0;
+      let h = 0;
       for (let i = 0; i < body.children.length; i++) {
-        const rect = (body.children[i] as HTMLElement).getBoundingClientRect();
-        if (rect.bottom > bottom) bottom = rect.bottom;
+        const el = body.children[i] as HTMLElement;
+        // Élément hors flux (fixed/sticky) : on l'ignore pour la hauteur du flux.
+        if (el.offsetParent === null && el !== body) continue;
+        const bottom = el.offsetTop + el.offsetHeight;
+        if (bottom > h) h = bottom;
       }
-      // Marge basse éventuelle du body (Tailwind met margin:0, mais on reste sûr).
-      const mb = parseFloat(getComputedStyle(body).paddingBottom) || 0;
-      const h = Math.ceil(bottom + mb);
-      return h > 0 ? h : body.scrollHeight;
+      const pb = parseFloat(getComputedStyle(body).paddingBottom) || 0;
+      const total = Math.ceil(h + pb);
+      return total > 0 ? total : body.scrollHeight;
     }
 
     function post() {
@@ -48,32 +49,26 @@ export default function IframeResizer() {
     }
 
     schedule();
-    window.addEventListener("resize", schedule);
     window.addEventListener("load", schedule);
+    // Sûr désormais : la mesure ne dépend pas du viewport, donc redimensionner
+    // l'iframe ne peut pas relancer une boucle (la hauteur mesurée est stable).
+    window.addEventListener("resize", schedule);
 
     // Changements de contenu (ajout/retrait de lignes, changement d'étape...).
+    // On n'observe PAS les attributs : ils ne changent pas la hauteur du flux
+    // et génèrent du bruit pouvant entretenir une boucle.
     const observer = new MutationObserver(schedule);
     observer.observe(document.documentElement, {
       childList: true,
       subtree: true,
-      attributes: true,
     });
-
-    // Variations de hauteur du contenu, y compris en baisse.
-    let ro: ResizeObserver | undefined;
-    if ("ResizeObserver" in window && document.body) {
-      ro = new ResizeObserver(schedule);
-      ro.observe(document.body);
-    }
 
     // Mesures différées pour les layouts / polices chargés tardivement.
     const timers = [150, 400, 1000].map((t) => window.setTimeout(schedule, t));
 
     return () => {
-      window.removeEventListener("resize", schedule);
       window.removeEventListener("load", schedule);
       observer.disconnect();
-      ro?.disconnect();
       timers.forEach((t) => clearTimeout(t));
     };
   }, []);
