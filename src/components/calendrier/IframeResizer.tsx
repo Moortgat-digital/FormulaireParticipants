@@ -38,6 +38,9 @@ export default function IframeResizer() {
       const h = measure();
       if (h > 0 && h !== last) {
         last = h;
+        // Marqueur de version : confirme en console quelle version d'émetteur
+        // tourne réellement dans l'iframe (utile en cas de cache/déploiement).
+        console.log("[IframeResizer v3-offset] hauteur émise:", h);
         window.parent.postMessage({ type: "resize-iframe", height: h }, "*");
       }
     }
