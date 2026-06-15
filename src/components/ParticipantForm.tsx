@@ -67,6 +67,14 @@ export default function ParticipantForm({
   const [groupError, setGroupError] = useState(false);
   const [peopleModalOpen, setPeopleModalOpen] = useState(false);
 
+  // Édition / suppression d'une demande « À traiter » depuis la pop-up
+  const [editPersonId, setEditPersonId] = useState<string | null>(null);
+  const [editPersonFields, setEditPersonFields] = useState({ prenom: "", nom: "", email: "" });
+  const [savingPerson, setSavingPerson] = useState(false);
+  const [deletePersonId, setDeletePersonId] = useState<string | null>(null);
+  const [deletingPerson, setDeletingPerson] = useState(false);
+  const [personActionError, setPersonActionError] = useState("");
+
   // Step 2 state
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [errors, setErrors] = useState<
@@ -109,6 +117,61 @@ export default function ParticipantForm({
 
   const aTraiter = groupPeople.filter((p) => p.statut === "À traiter");
   const inscrits = groupPeople.filter((p) => p.statut === "Inscrit(e)");
+
+  function closePeopleModal() {
+    setPeopleModalOpen(false);
+    setEditPersonId(null);
+    setDeletePersonId(null);
+    setPersonActionError("");
+  }
+
+  function startEditPerson(p: GroupParticipant) {
+    setDeletePersonId(null);
+    setPersonActionError("");
+    setEditPersonId(p.id);
+    setEditPersonFields({ prenom: p.prenom, nom: p.nom, email: p.email });
+  }
+
+  async function saveEditPerson() {
+    if (!editPersonId) return;
+    setSavingPerson(true);
+    setPersonActionError("");
+    try {
+      const res = await fetch("/api/csm", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pageId: editPersonId, fields: editPersonFields }),
+      });
+      if (!res.ok) throw new Error();
+      setGroupPeople((prev) =>
+        prev.map((p) => (p.id === editPersonId ? { ...p, ...editPersonFields } : p))
+      );
+      setEditPersonId(null);
+    } catch {
+      setPersonActionError("Échec de la modification. Réessayez.");
+    } finally {
+      setSavingPerson(false);
+    }
+  }
+
+  async function confirmDeletePerson() {
+    if (!deletePersonId) return;
+    const id = deletePersonId;
+    setDeletingPerson(true);
+    setPersonActionError("");
+    try {
+      const res = await fetch(`/api/csm?pageId=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error();
+      setGroupPeople((prev) => prev.filter((p) => p.id !== id));
+      setDeletePersonId(null);
+    } catch {
+      setPersonActionError("Échec de la suppression. Réessayez.");
+    } finally {
+      setDeletingPerson(false);
+    }
+  }
 
   function handleContinue() {
     if (!selectedGroupId) return;
@@ -628,15 +691,13 @@ export default function ParticipantForm({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl">
             <div className="flex items-start justify-between border-b border-gray-200 px-6 py-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Participants du groupe
-                </h3>
-                <p className="mt-0.5 text-sm text-gray-500">{selectedGroupName}</p>
-              </div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Participants du groupe
+                {selectedGroupName ? ` — ${selectedGroupName}` : ""}
+              </h3>
               <button
                 type="button"
-                onClick={() => setPeopleModalOpen(false)}
+                onClick={closePeopleModal}
                 className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                 aria-label="Fermer"
               >
@@ -647,33 +708,148 @@ export default function ParticipantForm({
             </div>
 
             <div className="max-h-[60vh] overflow-y-auto px-6 py-4">
+              {/* Info : les inscrits validés se gèrent dans le CSM */}
+              <p className="mb-3 rounded-md bg-blue-50 px-3 py-2 text-xs text-blue-800">
+                Si vous souhaitez modifier ou retirer un participant déjà inscrit,
+                consultez le CSM de votre formation.
+              </p>
+
+              {personActionError && (
+                <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+                  {personActionError}
+                </p>
+              )}
+
               {groupPeople.length === 0 ? (
                 <p className="py-4 text-center text-sm text-gray-500">
                   Aucun participant pour ce groupe.
                 </p>
               ) : (
                 <ul className="divide-y divide-gray-100">
-                  {groupPeople.map((p, i) => (
-                    <li key={`${p.email}-${i}`} className="flex items-start justify-between gap-3 py-2.5">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900">
-                          {p.prenom} {p.nom}
-                        </p>
-                        <p className="truncate text-xs text-gray-500">{p.email}</p>
-                      </div>
-                      <span
-                        className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          p.statut === "Inscrit(e)"
-                            ? "bg-green-100 text-green-800"
-                            : p.statut === "À traiter"
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-gray-100 text-gray-700"
-                        }`}
-                      >
-                        {p.statut || "—"}
-                      </span>
-                    </li>
-                  ))}
+                  {groupPeople.map((p) => {
+                    const editable = p.statut === "À traiter";
+                    if (editPersonId === p.id) {
+                      /* ---- Mode édition ---- */
+                      return (
+                        <li key={p.id} className="py-2.5">
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={editPersonFields.prenom}
+                              onChange={(e) => setEditPersonFields((f) => ({ ...f, prenom: e.target.value }))}
+                              placeholder="Prénom"
+                              className="w-1/2 rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                            <input
+                              type="text"
+                              value={editPersonFields.nom}
+                              onChange={(e) => setEditPersonFields((f) => ({ ...f, nom: e.target.value }))}
+                              placeholder="Nom"
+                              className="w-1/2 rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </div>
+                          <input
+                            type="email"
+                            value={editPersonFields.email}
+                            onChange={(e) => setEditPersonFields((f) => ({ ...f, email: e.target.value }))}
+                            placeholder="E-mail"
+                            className="mt-2 w-full rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                          <div className="mt-2 flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditPersonId(null)}
+                              disabled={savingPerson}
+                              className="rounded-md border border-gray-300 px-3 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                            >
+                              Annuler
+                            </button>
+                            <button
+                              type="button"
+                              onClick={saveEditPerson}
+                              disabled={savingPerson}
+                              className="rounded-md bg-blue-600 px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                            >
+                              {savingPerson ? "Enregistrement…" : "Enregistrer"}
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    }
+                    /* ---- Mode affichage ---- */
+                    return (
+                      <li key={p.id} className="flex items-start justify-between gap-3 py-2.5">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900">
+                            {p.prenom} {p.nom}
+                          </p>
+                          <p className="truncate text-xs text-gray-500">{p.email}</p>
+                          {deletePersonId === p.id && (
+                            <div className="mt-1.5 flex items-center gap-2">
+                              <span className="text-xs text-red-700">Supprimer cette demande ?</span>
+                              <button
+                                type="button"
+                                onClick={confirmDeletePerson}
+                                disabled={deletingPerson}
+                                className="rounded bg-red-600 px-2 py-0.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                              >
+                                {deletingPerson ? "…" : "Oui"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeletePersonId(null)}
+                                disabled={deletingPerson}
+                                className="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                              >
+                                Non
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              p.statut === "Inscrit(e)"
+                                ? "bg-green-100 text-green-800"
+                                : p.statut === "À traiter"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {p.statut || "—"}
+                          </span>
+                          {editable && deletePersonId !== p.id && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => startEditPerson(p)}
+                                className="rounded p-1 text-gray-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                                title="Modifier"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditPersonId(null);
+                                  setPersonActionError("");
+                                  setDeletePersonId(p.id);
+                                }}
+                                className="rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                                title="Supprimer la demande"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
@@ -681,7 +857,7 @@ export default function ParticipantForm({
             <div className="flex justify-end border-t border-gray-200 px-6 py-4">
               <button
                 type="button"
-                onClick={() => setPeopleModalOpen(false)}
+                onClick={closePeopleModal}
                 className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
               >
                 Fermer

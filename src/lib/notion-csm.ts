@@ -112,6 +112,7 @@ export async function getDemandesByGroup(groupId: string): Promise<GroupParticip
       if (!("properties" in page)) continue;
       const props = page.properties as Record<string, unknown>;
       results.push({
+        id: page.id,
         prenom: extractPlainText(props["Prénom"]),
         nom: extractPlainText(props["Nom"]),
         email: extractPlainText(props["E-mail"]),

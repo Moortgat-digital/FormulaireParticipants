@@ -19,6 +19,7 @@ export interface Group {
 // Participant déjà présent dans un groupe (demande ou inscription validée),
 // utilisé pour afficher l'avancement sous la sélection de groupe.
 export interface GroupParticipant {
+  id: string;
   prenom: string;
   nom: string;
   email: string;
