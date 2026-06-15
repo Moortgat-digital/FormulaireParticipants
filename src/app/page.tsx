@@ -1,4 +1,5 @@
 import ParticipantForm from "@/components/ParticipantForm";
+import IframeResizer from "@/components/calendrier/IframeResizer";
 import { getPageTitle, getGroupsByFormation } from "@/lib/notion";
 
 interface PageProps {
@@ -34,7 +35,8 @@ export default async function Page({ searchParams }: PageProps) {
   ]);
 
   return (
-    <main className="min-h-screen">
+    <main className="py-4">
+      <IframeResizer />
       <ParticipantForm
         formationId={recordId}
         formationName={formationName || "Formation"}
