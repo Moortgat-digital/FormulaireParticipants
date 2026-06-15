@@ -6,8 +6,10 @@ import { useEffect } from "react";
  * Envoie la hauteur du contenu à la fenêtre parente via postMessage afin que
  * l'iframe d'intégration s'ajuste automatiquement — agrandissement ET réduction.
  *
- * On mesure le <body> (et non documentElement, dont le scrollHeight est borné
- * par la hauteur courante de l'iframe et empêche toute réduction).
+ * On mesure la position du bas réel du contenu (les enfants directs du body),
+ * et NON document.documentElement / body.scrollHeight : ces derniers sont
+ * plafonnés par la hauteur courante de l'iframe et empêchent toute réduction
+ * (l'iframe restait « haute » après le passage d'un contenu long à court).
  */
 export default function IframeResizer() {
   useEffect(() => {
@@ -17,13 +19,17 @@ export default function IframeResizer() {
     function measure(): number {
       const body = document.body;
       if (!body) return 0;
-      return Math.ceil(
-        Math.max(
-          body.scrollHeight,
-          body.offsetHeight,
-          body.getBoundingClientRect().height
-        )
-      );
+      // Bas du contenu = plus grande valeur de `bottom` parmi les enfants du
+      // body (relatif au haut du viewport, contenu non scrollé en iframe).
+      let bottom = 0;
+      for (let i = 0; i < body.children.length; i++) {
+        const rect = (body.children[i] as HTMLElement).getBoundingClientRect();
+        if (rect.bottom > bottom) bottom = rect.bottom;
+      }
+      // Marge basse éventuelle du body (Tailwind met margin:0, mais on reste sûr).
+      const mb = parseFloat(getComputedStyle(body).paddingBottom) || 0;
+      const h = Math.ceil(bottom + mb);
+      return h > 0 ? h : body.scrollHeight;
     }
 
     function post() {
@@ -45,7 +51,7 @@ export default function IframeResizer() {
     window.addEventListener("resize", schedule);
     window.addEventListener("load", schedule);
 
-    // Détecte les changements de contenu (ajout/retrait de lignes, étapes...).
+    // Changements de contenu (ajout/retrait de lignes, changement d'étape...).
     const observer = new MutationObserver(schedule);
     observer.observe(document.documentElement, {
       childList: true,
@@ -53,7 +59,7 @@ export default function IframeResizer() {
       attributes: true,
     });
 
-    // Détecte directement les variations de hauteur du body (y compris en baisse).
+    // Variations de hauteur du contenu, y compris en baisse.
     let ro: ResizeObserver | undefined;
     if ("ResizeObserver" in window && document.body) {
       ro = new ResizeObserver(schedule);
