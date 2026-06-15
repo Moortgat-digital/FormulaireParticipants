@@ -99,6 +99,10 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
+  // Export CSV modal state
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportGroupe, setExportGroupe] = useState<string>("all");
+
   // Unsubscribe modal state
   const [unsubTarget, setUnsubTarget] = useState<DemandeInscription | null>(null);
   const [unsubJournees, setUnsubJournees] = useState<Journee[]>([]);
@@ -474,27 +478,53 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
   // ---- Export CSV ----
 
   function csvCell(value: string): string {
-    const v = value ?? "";
-    // Échappe les guillemets et entoure si le champ contient un séparateur, un
-    // guillemet ou un saut de ligne.
-    if (/[";\n\r]/.test(v)) {
-      return `"${v.replace(/"/g, '""')}"`;
-    }
-    return v;
+    // Valeurs uniquement : on entoure systématiquement de guillemets pour forcer
+    // un format texte (pas de formule, pas de conversion auto par le tableur).
+    const v = (value ?? "").replace(/"/g, '""');
+    return `"${v}"`;
+  }
+
+  // « Maj en début, minuscules le reste » (ex. "JEAN" -> "Jean").
+  function capitalize(s: string): string {
+    const t = (s ?? "").trim();
+    if (!t) return "";
+    return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
+  }
+
+  function openExport() {
+    setExportGroupe(filterGroupe);
+    setExportOpen(true);
   }
 
   function exportCsv() {
-    // Exporte les demandes actuellement affichées (selon les filtres en cours).
-    const headers = ["Prénom", "Nom", "E-mail", "Entreprise", "Groupe", "Statut"];
-    const rows = filtered.map((d) =>
-      [d.prenom, d.nom, d.email, d.entreprise, d.groupeNom, d.statut].map(csvCell).join(";")
+    // Exporte les demandes du groupe choisi (et respecte la recherche / le statut
+    // actifs), avec uniquement Prénom, Nom et E-mail.
+    const list = demandes.filter((d) => {
+      if (filterStatut !== "all" && d.statut !== filterStatut) return false;
+      if (exportGroupe !== "all" && d.groupeNom !== exportGroupe) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        const match =
+          d.nom.toLowerCase().includes(q) ||
+          d.prenom.toLowerCase().includes(q) ||
+          d.email.toLowerCase().includes(q) ||
+          d.entreprise.toLowerCase().includes(q);
+        if (!match) return false;
+      }
+      return true;
+    });
+
+    const headers = ["Prénom", "Nom", "E-mail"];
+    const rows = list.map((d) =>
+      [capitalize(d.prenom), d.nom, d.email].map(csvCell).join(";")
     );
     // Séparateur « ; » et BOM UTF-8 pour une ouverture correcte dans Excel (FR).
-    const content = "﻿" + [headers.join(";"), ...rows].join("\r\n");
+    const content = "﻿" + [headers.map(csvCell).join(";"), ...rows].join("\r\n");
 
     const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const slug = (formationNom || "inscriptions")
+    const base = exportGroupe !== "all" ? exportGroupe : formationNom || "inscriptions";
+    const slug = base
       .normalize("NFD")
       .replace(/[̀-ͯ]/g, "")
       .replace(/[^a-zA-Z0-9]+/g, "-")
@@ -508,6 +538,7 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    setExportOpen(false);
   }
 
   // Unique statuts & groupes for filters
@@ -568,10 +599,10 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
         </select>
         <button
           type="button"
-          onClick={exportCsv}
-          disabled={loading || filtered.length === 0}
+          onClick={openExport}
+          disabled={loading || demandes.length === 0}
           className="flex items-center gap-2 rounded-md border border-csm-gris-clair px-3 py-2 text-sm text-csm-gris transition-colors hover:bg-csm-blanc hover:border-csm-gris disabled:cursor-not-allowed disabled:opacity-50"
-          title="Exporter les demandes affichées en CSV"
+          title="Exporter les inscriptions en CSV"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -884,6 +915,51 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
           }`}
         >
           {result.message}
+        </div>
+      )}
+
+      {/* Export CSV modal */}
+      {exportOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="mx-4 w-full max-w-md rounded-xl bg-white shadow-2xl">
+            <div className="border-b border-csm-gris-clair px-6 py-4">
+              <h3 className="text-lg font-semibold text-csm-bleu">Exporter en CSV</h3>
+            </div>
+            <div className="px-6 py-4">
+              <label className="block text-sm font-medium text-csm-bleu mb-2">
+                Quel groupe souhaitez-vous exporter ?
+              </label>
+              <select
+                value={exportGroupe}
+                onChange={(e) => setExportGroupe(e.target.value)}
+                className="w-full rounded-md border border-csm-gris-clair px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-csm-action hover:border-csm-gris"
+              >
+                <option value="all">Tous les groupes</option>
+                {groupes.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+              <p className="mt-2 text-xs text-csm-gris">
+                Colonnes exportées : Prénom, Nom, E-mail.
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 border-t border-csm-gris-clair px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setExportOpen(false)}
+                className="rounded-lg border border-csm-gris-clair px-4 py-2 text-sm font-medium text-csm-gris transition-colors hover:bg-csm-blanc"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={exportCsv}
+                className="rounded-lg bg-csm-action px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-csm-action-hover focus:outline-none focus:ring-2 focus:ring-csm-action focus:ring-offset-2"
+              >
+                Exporter
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
