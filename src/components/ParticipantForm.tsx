@@ -1,7 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import type { Participant, Group, SubmitPayload, SubmitResponse } from "@/types/participant";
+import { useState, useEffect } from "react";
+import type {
+  Participant,
+  Group,
+  GroupParticipant,
+  SubmitPayload,
+  SubmitResponse,
+} from "@/types/participant";
 import ParticipantRow from "./ParticipantRow";
 
 interface ParticipantFormProps {
@@ -55,6 +61,12 @@ export default function ParticipantForm({
   const [selectedGroupName, setSelectedGroupName] = useState("");
   const [participantCount, setParticipantCount] = useState<number | "">(1);
 
+  // Avancement du groupe sélectionné (demandes / inscrits)
+  const [groupPeople, setGroupPeople] = useState<GroupParticipant[]>([]);
+  const [groupLoading, setGroupLoading] = useState(false);
+  const [groupError, setGroupError] = useState(false);
+  const [peopleModalOpen, setPeopleModalOpen] = useState(false);
+
   // Step 2 state
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [errors, setErrors] = useState<
@@ -62,6 +74,41 @@ export default function ParticipantForm({
   >([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<SubmitResponse | null>(null);
+
+  // Charge l'avancement du groupe (demandes + inscrits) à chaque changement.
+  useEffect(() => {
+    if (!selectedGroupId) {
+      setGroupPeople([]);
+      setGroupError(false);
+      return;
+    }
+    let cancelled = false;
+    setGroupLoading(true);
+    setGroupError(false);
+    fetch(`/api/group-participants?groupId=${encodeURIComponent(selectedGroupId)}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Erreur");
+        return res.json();
+      })
+      .then((data) => {
+        if (!cancelled) setGroupPeople(data.participants ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setGroupPeople([]);
+          setGroupError(true);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setGroupLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedGroupId]);
+
+  const aTraiter = groupPeople.filter((p) => p.statut === "À traiter");
+  const inscrits = groupPeople.filter((p) => p.statut === "Inscrit(e)");
 
   function handleContinue() {
     if (!selectedGroupId) return;
@@ -339,6 +386,45 @@ export default function ParticipantForm({
                       </option>
                     ))}
                   </select>
+
+                  {/* Avancement du groupe sélectionné */}
+                  {selectedGroupId && (
+                    <div className="mt-2 text-sm">
+                      {groupLoading ? (
+                        <span className="text-gray-400">Chargement de l&apos;avancement…</span>
+                      ) : groupError ? (
+                        <span className="text-gray-400">
+                          Avancement indisponible pour le moment.
+                        </span>
+                      ) : aTraiter.length === 0 && inscrits.length === 0 ? (
+                        <span className="text-amber-700">
+                          ⚠️ Aucune demande d&apos;inscription émise pour ce groupe
+                        </span>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                          {inscrits.length > 0 && (
+                            <span className="text-green-700">
+                              ✅ {inscrits.length} participant{inscrits.length > 1 ? "s" : ""} inscrit
+                              {inscrits.length > 1 ? "s" : ""} au groupe
+                            </span>
+                          )}
+                          {aTraiter.length > 0 && (
+                            <span className="text-amber-700">
+                              🟨 {aTraiter.length} demande{aTraiter.length > 1 ? "s" : ""} d&apos;inscription
+                              {aTraiter.length > 1 ? "s" : ""} émise{aTraiter.length > 1 ? "s" : ""}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setPeopleModalOpen(true)}
+                            className="font-medium text-blue-600 underline-offset-2 hover:underline"
+                          >
+                            Consulter
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Participant count */}
@@ -536,6 +622,74 @@ export default function ParticipantForm({
           </form>
         )}
       </div>
+
+      {/* Pop-up : participants déjà présents dans le groupe */}
+      {peopleModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl">
+            <div className="flex items-start justify-between border-b border-gray-200 px-6 py-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Participants du groupe
+                </h3>
+                <p className="mt-0.5 text-sm text-gray-500">{selectedGroupName}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPeopleModalOpen(false)}
+                className="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                aria-label="Fermer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="max-h-[60vh] overflow-y-auto px-6 py-4">
+              {groupPeople.length === 0 ? (
+                <p className="py-4 text-center text-sm text-gray-500">
+                  Aucun participant pour ce groupe.
+                </p>
+              ) : (
+                <ul className="divide-y divide-gray-100">
+                  {groupPeople.map((p, i) => (
+                    <li key={`${p.email}-${i}`} className="flex items-start justify-between gap-3 py-2.5">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900">
+                          {p.prenom} {p.nom}
+                        </p>
+                        <p className="truncate text-xs text-gray-500">{p.email}</p>
+                      </div>
+                      <span
+                        className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          p.statut === "Inscrit(e)"
+                            ? "bg-green-100 text-green-800"
+                            : p.statut === "À traiter"
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {p.statut || "—"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="flex justify-end border-t border-gray-200 px-6 py-4">
+              <button
+                type="button"
+                onClick={() => setPeopleModalOpen(false)}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

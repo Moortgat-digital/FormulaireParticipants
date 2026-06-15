@@ -16,6 +16,15 @@ export interface Group {
   dateDebut?: string;
 }
 
+// Participant déjà présent dans un groupe (demande ou inscription validée),
+// utilisé pour afficher l'avancement sous la sélection de groupe.
+export interface GroupParticipant {
+  prenom: string;
+  nom: string;
+  email: string;
+  statut: string;
+}
+
 export interface SubmitPayload {
   participants: Omit<Participant, "id">[];
   formationId: string;

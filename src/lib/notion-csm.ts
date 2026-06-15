@@ -1,5 +1,6 @@
 import { Client } from "@notionhq/client";
 import type { DemandeInscription } from "@/types/csm";
+import type { GroupParticipant } from "@/types/participant";
 
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 
@@ -87,6 +88,39 @@ export async function getDemandesByFormation(formationId: string): Promise<Deman
   for (const d of results) {
     d.groupeNom = groupNames.get(d.groupeId) ?? "";
   }
+
+  return results;
+}
+
+// Demandes/inscriptions d'un seul groupe (prénom/nom/email/statut), sans
+// enrichissement des noms de groupe — léger, pour l'avancement côté formulaire.
+export async function getDemandesByGroup(groupId: string): Promise<GroupParticipant[]> {
+  const results: GroupParticipant[] = [];
+  let cursor: string | undefined;
+
+  do {
+    const response = await notion.dataSources.query({
+      data_source_id: DATABASE_ID,
+      filter: {
+        property: "📂 Groupe",
+        relation: { contains: groupId },
+      },
+      ...(cursor ? { start_cursor: cursor } : {}),
+    });
+
+    for (const page of response.results) {
+      if (!("properties" in page)) continue;
+      const props = page.properties as Record<string, unknown>;
+      results.push({
+        prenom: extractPlainText(props["Prénom"]),
+        nom: extractPlainText(props["Nom"]),
+        email: extractPlainText(props["E-mail"]),
+        statut: extractPlainText(props["Statut"]),
+      });
+    }
+
+    cursor = response.has_more ? (response.next_cursor ?? undefined) : undefined;
+  } while (cursor);
 
   return results;
 }
