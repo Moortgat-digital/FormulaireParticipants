@@ -38,9 +38,13 @@ export default function IframeResizer() {
       const h = measure();
       if (h > 0 && h !== last) {
         last = h;
-        // Marqueur de version : confirme en console quelle version d'émetteur
-        // tourne réellement dans l'iframe (utile en cas de cache/déploiement).
-        console.log("[IframeResizer v3-offset] hauteur émise:", h);
+        // DIAGNOSTIC : détaille chaque enfant du body pour repérer l'élément
+        // qui « gonfle » la hauteur (à retirer une fois le coupable identifié).
+        const detail = Array.from(document.body.children).map((el) => {
+          const e = el as HTMLElement;
+          return `${e.tagName}#${e.id || "-"} top=${e.offsetTop} h=${e.offsetHeight} op=${e.offsetParent ? (e.offsetParent as HTMLElement).tagName : "null"}`;
+        });
+        console.log("[IframeResizer v4-diag] hauteur émise:", h, "| docEl.clientHeight=", document.documentElement.clientHeight, "| enfants:", detail);
         window.parent.postMessage({ type: "resize-iframe", height: h }, "*");
       }
     }
