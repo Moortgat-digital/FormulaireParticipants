@@ -471,6 +471,45 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
     return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   }
 
+  // ---- Export CSV ----
+
+  function csvCell(value: string): string {
+    const v = value ?? "";
+    // Échappe les guillemets et entoure si le champ contient un séparateur, un
+    // guillemet ou un saut de ligne.
+    if (/[";\n\r]/.test(v)) {
+      return `"${v.replace(/"/g, '""')}"`;
+    }
+    return v;
+  }
+
+  function exportCsv() {
+    // Exporte les demandes actuellement affichées (selon les filtres en cours).
+    const headers = ["Prénom", "Nom", "E-mail", "Entreprise", "Groupe", "Statut"];
+    const rows = filtered.map((d) =>
+      [d.prenom, d.nom, d.email, d.entreprise, d.groupeNom, d.statut].map(csvCell).join(";")
+    );
+    // Séparateur « ; » et BOM UTF-8 pour une ouverture correcte dans Excel (FR).
+    const content = "﻿" + [headers.join(";"), ...rows].join("\r\n");
+
+    const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const slug = (formationNom || "inscriptions")
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-zA-Z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .toLowerCase();
+    const date = new Date().toISOString().slice(0, 10);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `inscriptions-${slug || "formation"}-${date}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
   // Unique statuts & groupes for filters
   const statuts = [...new Set(demandes.map((d) => d.statut).filter(Boolean))];
   const groupes = [...new Set(demandes.map((d) => d.groupeNom).filter(Boolean))];
@@ -527,6 +566,18 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
             <option key={g} value={g}>{g}</option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={exportCsv}
+          disabled={loading || filtered.length === 0}
+          className="flex items-center gap-2 rounded-md border border-csm-gris-clair px-3 py-2 text-sm text-csm-gris transition-colors hover:bg-csm-blanc hover:border-csm-gris disabled:cursor-not-allowed disabled:opacity-50"
+          title="Exporter les demandes affichées en CSV"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Export CSV
+        </button>
         <button
           type="button"
           onClick={fetchDemandes}
