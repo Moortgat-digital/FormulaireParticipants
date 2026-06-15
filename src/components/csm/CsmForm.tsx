@@ -523,17 +523,23 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
 
     const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const base = exportGroupe !== "all" ? exportGroupe : formationNom || "inscriptions";
-    const slug = base
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .replace(/[^a-zA-Z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .toLowerCase();
+    const slugify = (s: string) =>
+      (s || "")
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-zA-Z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .toLowerCase();
+    // Nom du fichier : groupe (si choisi) puis nom de la formation.
+    const parts = [
+      exportGroupe !== "all" ? slugify(exportGroupe) : "",
+      slugify(formationNom),
+    ].filter(Boolean);
+    const slug = parts.join("-") || "formation";
     const date = new Date().toISOString().slice(0, 10);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `inscriptions-${slug || "formation"}-${date}.csv`;
+    link.download = `inscriptions-${slug}-${date}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
