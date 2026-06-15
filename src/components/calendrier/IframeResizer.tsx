@@ -6,16 +6,19 @@ import { useEffect } from "react";
  * Envoie la hauteur du contenu à la fenêtre parente via postMessage afin que
  * l'iframe d'intégration s'ajuste automatiquement — agrandissement ET réduction.
  *
- * Mesure via `offsetTop + offsetHeight` des enfants du body : ces propriétés
- * de mise en page sont indépendantes du viewport ET du défilement, contrairement
- * à scrollHeight (plafonné par la hauteur de l'iframe) ou getBoundingClientRect
- * (dépend du scroll) — ce qui évite le plafonnement et les boucles de rétroaction
- * où l'iframe « regrossit » toute seule.
+ * Anti-boucle : on ne remesure PAS suite à nos propres redimensionnements
+ * (pas d'écouteur `resize` ni de ResizeObserver, qui créaient un cycle
+ * « on rétrécit → le contenu reflow plus haut → on remesure plus grand »).
+ * On ne réagit qu'aux vrais changements de contenu (MutationObserver), avec
+ * une courte fenêtre d'ignorance après chaque émission pour laisser le layout
+ * se stabiliser.
  */
 export default function IframeResizer() {
   useEffect(() => {
     let last = 0;
     let scheduled = false;
+    let ignoreUntil = 0;
+    const IGNORE_MS = 700;
 
     function measure(): number {
       const body = document.body;
@@ -23,8 +26,7 @@ export default function IframeResizer() {
       let h = 0;
       for (let i = 0; i < body.children.length; i++) {
         const el = body.children[i] as HTMLElement;
-        // Élément hors flux (fixed/sticky) : on l'ignore pour la hauteur du flux.
-        if (el.offsetParent === null && el !== body) continue;
+        if (el.offsetParent === null && el !== body) continue; // hors flux
         const bottom = el.offsetTop + el.offsetHeight;
         if (bottom > h) h = bottom;
       }
@@ -35,16 +37,25 @@ export default function IframeResizer() {
 
     function post() {
       scheduled = false;
+      const now = performance.now();
+      // Pendant la fenêtre d'ignorance (juste après une émission), on diffère
+      // la mesure au lieu d'agir : ça casse l'oscillation due au reflow.
+      if (now < ignoreUntil) {
+        window.setTimeout(schedule, ignoreUntil - now + 10);
+        return;
+      }
       const h = measure();
       if (h > 0 && h !== last) {
         last = h;
-        // DIAGNOSTIC : détaille chaque enfant du body pour repérer l'élément
-        // qui « gonfle » la hauteur (à retirer une fois le coupable identifié).
-        const detail = Array.from(document.body.children).map((el) => {
-          const e = el as HTMLElement;
-          return `${e.tagName}#${e.id || "-"} top=${e.offsetTop} h=${e.offsetHeight} op=${e.offsetParent ? (e.offsetParent as HTMLElement).tagName : "null"}`;
-        });
-        console.log("[IframeResizer v4-diag] hauteur émise:", h, "| docEl.clientHeight=", document.documentElement.clientHeight, "| enfants:", detail);
+        ignoreUntil = performance.now() + IGNORE_MS;
+        console.log(
+          "[IframeResizer v5] hauteur émise:",
+          h,
+          "| viewport h×w=",
+          document.documentElement.clientHeight,
+          "×",
+          document.documentElement.clientWidth
+        );
         window.parent.postMessage({ type: "resize-iframe", height: h }, "*");
       }
     }
@@ -57,13 +68,9 @@ export default function IframeResizer() {
 
     schedule();
     window.addEventListener("load", schedule);
-    // Sûr désormais : la mesure ne dépend pas du viewport, donc redimensionner
-    // l'iframe ne peut pas relancer une boucle (la hauteur mesurée est stable).
-    window.addEventListener("resize", schedule);
 
-    // Changements de contenu (ajout/retrait de lignes, changement d'étape...).
-    // On n'observe PAS les attributs : ils ne changent pas la hauteur du flux
-    // et génèrent du bruit pouvant entretenir une boucle.
+    // Uniquement les vrais changements de contenu (ajout/retrait de lignes,
+    // changement d'étape...). PAS d'écouteur resize / ResizeObserver.
     const observer = new MutationObserver(schedule);
     observer.observe(document.documentElement, {
       childList: true,
