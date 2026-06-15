@@ -125,6 +125,30 @@ export default function ParticipantForm({
     setPersonActionError("");
   }
 
+  // Recharge l'instantané du groupe (silencieux) pour resynchroniser l'état réel.
+  async function refreshGroupPeople() {
+    if (!selectedGroupId) return;
+    try {
+      const res = await fetch(
+        `/api/group-participants?groupId=${encodeURIComponent(selectedGroupId)}`
+      );
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setGroupPeople(data.participants ?? []);
+    } catch {
+      // On conserve l'état courant en cas d'échec réseau.
+    }
+  }
+
+  function openPeopleModal() {
+    setEditPersonId(null);
+    setDeletePersonId(null);
+    setPersonActionError("");
+    setPeopleModalOpen(true);
+    // Rafraîchit au moment d'agir, pour limiter la fenêtre de données périmées.
+    refreshGroupPeople();
+  }
+
   function startEditPerson(p: GroupParticipant) {
     setDeletePersonId(null);
     setPersonActionError("");
@@ -142,13 +166,19 @@ export default function ParticipantForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pageId: editPersonId, fields: editPersonFields }),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        await refreshGroupPeople();
+        throw new Error(data.detail || data.error || "Échec de la modification.");
+      }
       setGroupPeople((prev) =>
         prev.map((p) => (p.id === editPersonId ? { ...p, ...editPersonFields } : p))
       );
       setEditPersonId(null);
-    } catch {
-      setPersonActionError("Échec de la modification. Réessayez.");
+    } catch (err) {
+      setPersonActionError(
+        err instanceof Error ? err.message : "Échec de la modification. Réessayez."
+      );
     } finally {
       setSavingPerson(false);
     }
@@ -163,11 +193,17 @@ export default function ParticipantForm({
       const res = await fetch(`/api/csm?pageId=${encodeURIComponent(id)}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        await refreshGroupPeople();
+        throw new Error(data.detail || data.error || "Échec de la suppression.");
+      }
       setGroupPeople((prev) => prev.filter((p) => p.id !== id));
       setDeletePersonId(null);
-    } catch {
-      setPersonActionError("Échec de la suppression. Réessayez.");
+    } catch (err) {
+      setPersonActionError(
+        err instanceof Error ? err.message : "Échec de la suppression. Réessayez."
+      );
     } finally {
       setDeletingPerson(false);
     }
@@ -479,7 +515,7 @@ export default function ParticipantForm({
                           )}
                           <button
                             type="button"
-                            onClick={() => setPeopleModalOpen(true)}
+                            onClick={openPeopleModal}
                             className="font-medium text-blue-600 underline-offset-2 hover:underline"
                           >
                             Consulter

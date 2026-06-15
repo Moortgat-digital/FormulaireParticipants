@@ -130,6 +130,19 @@ export async function updateDemande(
   pageId: string,
   fields: { nom?: string; prenom?: string; email?: string; entreprise?: string }
 ) {
+  // Garde-fou : on ne modifie jamais une inscription déjà validée (statut
+  // susceptible d'avoir déclenché des automatisations n8n en aval). Protège
+  // contre un instantané périmé côté formulaire.
+  const current = await notion.pages.retrieve({ page_id: pageId });
+  if ("properties" in current) {
+    const statut = extractPlainText((current.properties as Record<string, unknown>)["Statut"]);
+    if (statut === "Inscrit(e)") {
+      throw new Error(
+        "Cette demande a été validée entre-temps. Modification impossible : gérez-la dans le CSM."
+      );
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const properties: Record<string, any> = {};
 
