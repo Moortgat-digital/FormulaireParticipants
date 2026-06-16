@@ -528,7 +528,7 @@ export default function LieuxForm({
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4">
+    <div className="lieux-form mx-auto max-w-5xl px-4">
       <Header formationNom={formationNom} />
 
       <div className="mt-3 space-y-3">

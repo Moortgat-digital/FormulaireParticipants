@@ -15,3 +15,22 @@
   --color-lieux-jaune-light: #fff3cd;
   --color-lieux-jaune-text: #856404;
 }
+
+/* Charte commune : police Inter en 16px.
+   Les champs de saisie conservent leur taille actuelle (règle non appliquée aux
+   input/select/textarea) ; les titres (h1–h3) gardent leur taille pour la
+   hiérarchie visuelle. */
+.lieux-form {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 16px;
+}
+.lieux-form p,
+.lieux-form span,
+.lieux-form label,
+.lieux-form a,
+.lieux-form button,
+.lieux-form li,
+.lieux-form strong,
+.lieux-form div {
+  font-size: 16px;
+}
