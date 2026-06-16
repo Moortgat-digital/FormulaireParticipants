@@ -16,7 +16,7 @@ export default function CalendrierLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`${inter.className} bg-cal-blanc text-cal-bleu`}>
+    <div className={`${inter.className} text-cal-bleu`}>
       {children}
     </div>
   );

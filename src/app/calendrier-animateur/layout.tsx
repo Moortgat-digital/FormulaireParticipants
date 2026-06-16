@@ -16,7 +16,7 @@ export default function CalendrierAnimateurLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className={`${inter.className} bg-cal-blanc text-cal-bleu overflow-hidden`}>
+    <div className={`${inter.className} text-cal-bleu overflow-hidden`}>
       {children}
     </div>
   );

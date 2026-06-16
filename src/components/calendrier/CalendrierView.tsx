@@ -202,7 +202,9 @@ export default function CalendrierView({ email, animateurId, titre, hideAnimateu
 
       {/* ── Loading / Error ── */}
       {loading && (
-        <div className="text-center py-12 text-cal-gris">Chargement…</div>
+        <div className="text-center py-12 text-cal-gris">
+          Récupération des journées de formation depuis Notion…
+        </div>
       )}
       {error && (
         <div className="text-center py-6 text-cal-rouge">{error}</div>
