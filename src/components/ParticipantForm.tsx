@@ -424,13 +424,10 @@ export default function ParticipantForm({
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4">
+    <div className="participant-form mx-auto max-w-7xl px-4">
       {/* Title */}
       <div className="mb-6">
-        <h2
-          className="text-2xl font-semibold text-gray-900"
-          style={{ fontFamily: "var(--font-dm-sans), sans-serif" }}
-        >
+        <h2 className="text-2xl font-semibold text-gray-900">
           Inscription des participants
         </h2>
         <p className="mt-1 text-sm text-gray-500">
@@ -553,7 +550,7 @@ export default function ParticipantForm({
                   type="button"
                   onClick={handleContinue}
                   disabled={!selectedGroupId || !participantCount || participantCount < 1}
-                  className="w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-400"
+                  className="w-full rounded-lg bg-[#22435D] px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#1a3349] focus:outline-none focus:ring-2 focus:ring-[#22435D] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Continuer
                 </button>
@@ -687,7 +684,7 @@ export default function ParticipantForm({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-400"
+                className="w-full rounded-lg bg-[#22435D] px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#1a3349] focus:outline-none focus:ring-2 focus:ring-[#22435D] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
@@ -804,7 +801,7 @@ export default function ParticipantForm({
                               type="button"
                               onClick={saveEditPerson}
                               disabled={savingPerson}
-                              className="rounded-md bg-blue-600 px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                              className="rounded-md bg-[#22435D] px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-[#1a3349] disabled:opacity-50"
                             >
                               {savingPerson ? "Enregistrement…" : "Enregistrer"}
                             </button>

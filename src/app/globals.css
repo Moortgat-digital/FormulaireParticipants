@@ -9,3 +9,26 @@ body {
   color: #171717;
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/* Formulaire participant : police Inter en 16px.
+   Les champs de saisie conservent leur taille actuelle ; les titres (h1–h3)
+   gardent leur taille pour préserver la hiérarchie visuelle. */
+.participant-form {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 16px;
+}
+.participant-form p,
+.participant-form span,
+.participant-form label,
+.participant-form a,
+.participant-form button,
+.participant-form li,
+.participant-form strong,
+.participant-form div {
+  font-size: 16px;
+}
+.participant-form input,
+.participant-form select,
+.participant-form textarea {
+  font-size: 0.875rem; /* taille actuelle des champs (text-sm) conservée */
+}
