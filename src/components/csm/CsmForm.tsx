@@ -301,7 +301,7 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
         next.delete(target.id);
         return next;
       });
-      setResult({ success: true, message: `Demande de ${target.prenom} ${target.nom} supprimée.` });
+      setResult({ success: true, message: `Demande de ${formatPrenom(target.prenom)} ${formatNom(target.nom)} supprimée.` });
       setDeleteTarget(null);
     } catch (err) {
       setResult({
@@ -330,7 +330,7 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
         if (!res.ok) throw new Error(data.error || "Erreur");
         deletedIds.push(t.id);
       } catch {
-        failed.push(`${t.prenom} ${t.nom}`);
+        failed.push(`${formatPrenom(t.prenom)} ${formatNom(t.nom)}`);
       }
     }
 
@@ -460,7 +460,7 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
         }`}
         title={
           match
-            ? `Doublon probable de ${match.prenom} ${match.nom}${match.statut ? ` (${match.statut})` : ""}`
+            ? `Doublon probable de ${formatPrenom(match.prenom)} ${formatNom(match.nom)}${match.statut ? ` (${match.statut})` : ""}`
             : "Doublon probable"
         }
       >
@@ -484,11 +484,19 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
     return `"${v}"`;
   }
 
-  // « Maj en début, minuscules le reste » (ex. "JEAN" -> "Jean").
-  function capitalize(s: string): string {
-    const t = (s ?? "").trim();
-    if (!t) return "";
-    return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
+  // Prénom : première lettre de chaque segment en majuscule, reste en minuscules.
+  // Gère les prénoms composés ("jean-pierre" -> "Jean-Pierre",
+  // "marie claire" -> "Marie Claire", "d'arc" -> "D'Arc").
+  function formatPrenom(s: string): string {
+    return (s ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/(^|[\s\-'’])(\p{L})/gu, (_m, sep, ch) => sep + ch.toUpperCase());
+  }
+
+  // Nom : systématiquement en majuscules.
+  function formatNom(s: string): string {
+    return (s ?? "").trim().toUpperCase();
   }
 
   function openExport() {
@@ -516,7 +524,7 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
 
     const headers = ["Prénom", "Nom", "E-mail"];
     const rows = list.map((d) =>
-      [capitalize(d.prenom), d.nom, d.email].map(csvCell).join(";")
+      [formatPrenom(d.prenom), formatNom(d.nom), d.email].map(csvCell).join(";")
     );
     // Séparateur « ; » et BOM UTF-8 pour une ouverture correcte dans Excel (FR).
     const content = "﻿" + [headers.map(csvCell).join(";"), ...rows].join("\r\n");
@@ -833,7 +841,7 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                       </div>
                       <label className="cursor-pointer" onClick={() => toggleOne(d.id)}>
                         <span className="text-sm font-medium text-csm-bleu">
-                          {d.prenom} {d.nom}
+                          {formatPrenom(d.prenom)} {formatNom(d.nom)}
                         </span>
                         {renderDupBadge(d)}
                         <span className="block sm:hidden text-xs text-csm-gris mt-0.5">
@@ -1040,7 +1048,7 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
               <p className="text-sm text-csm-gris">
                 Voulez-vous vraiment supprimer la demande d&apos;inscription de{" "}
                 <span className="font-medium text-csm-bleu">
-                  {deleteTarget.prenom} {deleteTarget.nom}
+                  {formatPrenom(deleteTarget.prenom)} {formatNom(deleteTarget.nom)}
                 </span>
                 {deleteTarget.groupeNom ? ` (${deleteTarget.groupeNom})` : ""} ?
               </p>
@@ -1100,7 +1108,7 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                 </button>
               </div>
               <p className="mt-1 text-sm text-csm-gris">
-                <span className="font-medium text-csm-bleu">{unsubTarget.prenom} {unsubTarget.nom}</span>
+                <span className="font-medium text-csm-bleu">{formatPrenom(unsubTarget.prenom)} {formatNom(unsubTarget.nom)}</span>
                 {" — "}{unsubTarget.groupeNom}
               </p>
             </div>
