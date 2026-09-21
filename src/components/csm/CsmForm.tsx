@@ -75,6 +75,10 @@ function dupConfidence(a: DemandeInscription, b: DemandeInscription): number {
 
 const DUP_THRESHOLD = 60; // % minimum pour afficher l'indicateur
 
+// Surveillance du traitement n8n déclenché par « Valider ».
+const POLL_INTERVAL_MS = 5000; // rechargement de la liste toutes les 5 s
+const POLL_TIMEOUT_MS = 180000; // garde-fou : 3 min maximum
+
 export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
   const [demandes, setDemandes] = useState<DemandeInscription[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -99,6 +103,9 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
+  // Suivi du traitement n8n en cours (ids des demandes envoyées via « Valider »)
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+
   // Export CSV modal state
   const [exportOpen, setExportOpen] = useState(false);
   const [exportGroupe, setExportGroupe] = useState<string>("all");
@@ -114,24 +121,69 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
   // Cache journées per groupeId to avoid redundant fetches
   const [journeesCache, setJourneesCache] = useState<Record<string, Journee[]>>({});
 
-  const fetchDemandes = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  // silent = rechargement de fond (surveillance) sans spinner plein écran ni
+  // effacement du tableau, pour ne pas masquer les lignes « Traitement… ».
+  const fetchDemandes = useCallback(async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+      setError("");
+    }
     try {
       const res = await fetch(`/api/csm?formationId=${encodeURIComponent(formationId)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Erreur");
       setDemandes(data.demandes);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur de chargement");
+      if (!silent) setError(err instanceof Error ? err.message : "Erreur de chargement");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [formationId]);
 
   useEffect(() => {
+    setProcessingIds(new Set()); // repart à zéro si on change de formation
     fetchDemandes();
   }, [fetchDemandes]);
+
+  // ---- Surveillance du traitement n8n ----
+
+  // Recharge la liste toutes les 5 s tant qu'un traitement est en cours, avec un
+  // garde-fou de 3 min. Réutilise fetchDemandes (mode silencieux).
+  useEffect(() => {
+    if (processingIds.size === 0) return;
+    const interval = setInterval(() => fetchDemandes(true), POLL_INTERVAL_MS);
+    const timeout = setTimeout(() => {
+      setProcessingIds(new Set());
+      setResult({
+        success: false,
+        message:
+          "Le traitement prend plus de temps que prévu. Rafraîchissez dans quelques minutes ou prévenez le support.",
+      });
+    }, POLL_TIMEOUT_MS);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [processingIds, fetchDemandes]);
+
+  // Fin du traitement : plus aucune demande envoyée n'est « À traiter ».
+  useEffect(() => {
+    if (processingIds.size === 0) return;
+    const encoreEnCours = demandes.some(
+      (d) => processingIds.has(d.id) && d.statut === "À traiter"
+    );
+    if (encoreEnCours) return;
+    const envoyees = demandes.filter((d) => processingIds.has(d.id));
+    const inscrits = envoyees.filter((d) => d.statut === "Inscrit(e)").length;
+    const erreurs = envoyees.length - inscrits;
+    setProcessingIds(new Set());
+    setResult({
+      success: erreurs === 0,
+      message:
+        `Traitement terminé : ${inscrits} inscrite${inscrits > 1 ? "s" : ""}` +
+        (erreurs > 0 ? `, ${erreurs} en erreur.` : "."),
+    });
+  }, [demandes, processingIds]);
 
   // Filtered demandes
   const filtered = demandes.filter((d) => {
@@ -226,9 +278,13 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Erreur webhook");
-      setResult({ success: true, message: data.message });
+      // La réponse « reçue » ≠ « traité » : on mémorise les ids envoyés et on
+      // lance la surveillance jusqu'à la mise à jour des statuts dans Notion.
+      setProcessingIds(new Set(selectedDemandes.map((d) => d.id)));
+      setResult(null);
       setSelected(new Set());
     } catch (err) {
+      // Échec d'emblée : pas de surveillance, on affiche l'erreur (consigne 6).
       setResult({
         success: false,
         message: err instanceof Error ? err.message : "Erreur lors de l'envoi.",
@@ -625,9 +681,9 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
         </button>
         <button
           type="button"
-          onClick={fetchDemandes}
-          disabled={loading}
-          className="rounded-md border border-csm-gris-clair px-3 py-2 text-sm text-csm-gris transition-colors hover:bg-csm-blanc hover:border-csm-gris"
+          onClick={() => fetchDemandes()}
+          disabled={loading || processingIds.size > 0}
+          className="rounded-md border border-csm-gris-clair px-3 py-2 text-sm text-csm-gris transition-colors hover:bg-csm-blanc hover:border-csm-gris disabled:cursor-not-allowed disabled:opacity-50"
           title="Rafraîchir"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -640,6 +696,17 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
       {error && (
         <div className="mb-4 rounded-lg border border-csm-orange/30 bg-csm-orange-light px-4 py-3 text-sm text-csm-orange">
           {error}
+        </div>
+      )}
+
+      {/* Traitement en cours */}
+      {processingIds.size > 0 && (
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-csm-action/30 bg-csm-action/5 px-4 py-3 text-sm text-csm-bleu">
+          <svg className="h-5 w-5 shrink-0 animate-spin text-csm-action" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <span>Traitement en cours, cela peut prendre une à deux minutes…</span>
         </div>
       )}
 
@@ -698,7 +765,7 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                   <button
                     type="button"
                     onClick={handleSend}
-                    disabled={selected.size === 0 || sending}
+                    disabled={selected.size === 0 || sending || processingIds.size > 0}
                     className="rounded-lg bg-csm-action px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-csm-action-hover focus:outline-none focus:ring-2 focus:ring-csm-action focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {sending ? (
@@ -729,8 +796,9 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
 
               {/* Rows */}
               <div className="divide-y divide-csm-gris-clair">
-                {filtered.map((d) =>
-                  editingId === d.id ? (
+                {filtered.map((d) => {
+                  const isProcessing = processingIds.has(d.id) && d.statut === "À traiter";
+                  return editingId === d.id ? (
                     /* ---- Edit mode ---- */
                     <div
                       key={d.id}
@@ -826,7 +894,9 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                     <div
                       key={d.id}
                       className={`grid grid-cols-1 sm:grid-cols-[40px_1fr_1fr_1fr_1fr_120px_80px] gap-2 px-4 py-3 items-center transition-colors ${
-                        selected.has(d.id)
+                        d.statut === "Refusé" || d.statut === "Erreur"
+                          ? "bg-red-50"
+                          : selected.has(d.id)
                           ? "bg-csm-action/5"
                           : "hover:bg-csm-blanc"
                       }`}
@@ -836,10 +906,14 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                           type="checkbox"
                           checked={selected.has(d.id)}
                           onChange={() => toggleOne(d.id)}
-                          className="h-4 w-4 rounded border-csm-gris-clair text-csm-action focus:ring-csm-action cursor-pointer"
+                          disabled={isProcessing}
+                          className={`h-4 w-4 rounded border-csm-gris-clair text-csm-action focus:ring-csm-action ${isProcessing ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
                         />
                       </div>
-                      <label className="cursor-pointer" onClick={() => toggleOne(d.id)}>
+                      <label
+                        className={isProcessing ? "cursor-default" : "cursor-pointer"}
+                        onClick={() => !isProcessing && toggleOne(d.id)}
+                      >
                         <span className="text-sm font-medium text-csm-bleu">
                           {formatPrenom(d.prenom)} {formatNom(d.nom)}
                         </span>
@@ -858,22 +932,32 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                         {d.groupeNom}
                       </div>
                       <div>
-                        <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            d.statut === "À traiter"
-                              ? "bg-amber-100 text-amber-800"
-                              : d.statut === "Inscrit(e)"
-                              ? "bg-green-100 text-green-800"
-                              : d.statut === "Refusé"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {d.statut || "—"}
-                        </span>
+                        {isProcessing ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-csm-action">
+                            <svg className="h-3.5 w-3.5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                            Traitement…
+                          </span>
+                        ) : (
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              d.statut === "À traiter"
+                                ? "bg-amber-100 text-amber-800"
+                                : d.statut === "Inscrit(e)"
+                                ? "bg-green-100 text-green-800"
+                                : d.statut === "Refusé" || d.statut === "Erreur"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {d.statut || "—"}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1">
-                        {d.statut !== "Inscrit(e)" && (
+                        {!isProcessing && d.statut !== "Inscrit(e)" && (
                           <>
                             <button
                               type="button"
@@ -911,8 +995,8 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                         )}
                       </div>
                     </div>
-                  )
-                )}
+                  );
+                })}
               </div>
             </>
           )}
