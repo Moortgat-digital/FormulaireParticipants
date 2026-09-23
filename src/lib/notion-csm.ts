@@ -52,6 +52,9 @@ export async function getDemandesByFormation(formationId: string): Promise<Deman
         statut: extractPlainText(props["Statut"]),
         soumisPar: extractPlainText(props["Soumis par"]),
         createdTime: (page as { created_time?: string }).created_time ?? "",
+        prenomNplus1: extractPlainText(props["Prénom du N+1"]),
+        nomNplus1: extractPlainText(props["Nom du N+1"]),
+        emailNplus1: extractPlainText(props["E-mail du N+1"]),
       });
     }
 
