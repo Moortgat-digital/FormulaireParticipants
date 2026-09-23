@@ -109,6 +109,8 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
   // Export CSV modal state
   const [exportOpen, setExportOpen] = useState(false);
   const [exportGroupe, setExportGroupe] = useState<string>("all");
+  // "hub" = Prénom/Nom/E-mail ; "full" = + Entreprise et N+1
+  const [exportType, setExportType] = useState<"hub" | "full">("hub");
 
   // Unsubscribe modal state
   const [unsubTarget, setUnsubTarget] = useState<DemandeInscription | null>(null);
@@ -267,7 +269,20 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
     const payload: CsmWebhookPayload = {
       formationId,
       formationNom,
-      demandes: selectedDemandes,
+      // Contrat n8n strictement inchangé : on n'envoie que les champs d'origine
+      // (les champs N+1 servent uniquement à l'affichage / l'export « complet »).
+      demandes: selectedDemandes.map((d) => ({
+        id: d.id,
+        nom: d.nom,
+        prenom: d.prenom,
+        email: d.email,
+        entreprise: d.entreprise,
+        groupeId: d.groupeId,
+        groupeNom: d.groupeNom,
+        statut: d.statut,
+        soumisPar: d.soumisPar,
+        createdTime: d.createdTime,
+      })),
     };
 
     try {
@@ -555,14 +570,15 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
     return (s ?? "").trim().toUpperCase();
   }
 
-  function openExport() {
+  function openExport(type: "hub" | "full") {
+    setExportType(type);
     setExportGroupe(filterGroupe);
     setExportOpen(true);
   }
 
   function exportCsv() {
     // Exporte les demandes du groupe choisi (et respecte la recherche / le statut
-    // actifs), avec uniquement Prénom, Nom et E-mail.
+    // actifs). « hub » = Prénom/Nom/E-mail ; « full » = + Entreprise et N+1.
     const list = demandes.filter((d) => {
       if (filterStatut !== "all" && d.statut !== filterStatut) return false;
       if (exportGroupe !== "all" && d.groupeNom !== exportGroupe) return false;
@@ -578,10 +594,23 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
       return true;
     });
 
-    const headers = ["Prénom", "Nom", "E-mail"];
-    const rows = list.map((d) =>
-      [formatPrenom(d.prenom), formatNom(d.nom), d.email].map(csvCell).join(";")
-    );
+    const full = exportType === "full";
+    const headers = full
+      ? ["Prénom", "Nom", "E-mail", "Entreprise", "Prénom N+1", "Nom N+1", "E-mail N+1"]
+      : ["Prénom", "Nom", "E-mail"];
+    const rows = list.map((d) => {
+      const base = [formatPrenom(d.prenom), formatNom(d.nom), d.email];
+      const cells = full
+        ? [
+            ...base,
+            d.entreprise,
+            formatPrenom(d.prenomNplus1 ?? ""),
+            formatNom(d.nomNplus1 ?? ""),
+            d.emailNplus1 ?? "",
+          ]
+        : base;
+      return cells.map(csvCell).join(";");
+    });
     // Séparateur « ; » et BOM UTF-8 pour une ouverture correcte dans Excel (FR).
     const content = "﻿" + [headers.map(csvCell).join(";"), ...rows].join("\r\n");
 
@@ -594,8 +623,9 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
         .replace(/[^a-zA-Z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "")
         .toLowerCase();
-    // Nom du fichier : groupe (si choisi) puis nom de la formation.
+    // Nom du fichier : type d'export, groupe (si choisi) puis nom de la formation.
     const parts = [
+      full ? "complet" : "hub",
       exportGroupe !== "all" ? slugify(exportGroupe) : "",
       slugify(formationNom),
     ].filter(Boolean);
@@ -669,10 +699,22 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
         </select>
         <button
           type="button"
-          onClick={openExport}
+          onClick={() => openExport("hub")}
           disabled={loading || demandes.length === 0}
           className="flex items-center gap-2 rounded-md border border-csm-gris-clair px-3 py-2 text-sm text-csm-gris transition-colors hover:bg-csm-blanc hover:border-csm-gris disabled:cursor-not-allowed disabled:opacity-50"
-          title="Exporter les inscriptions en CSV"
+          title="Exporter (format Hub) : Prénom, Nom, E-mail"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Export Hub
+        </button>
+        <button
+          type="button"
+          onClick={() => openExport("full")}
+          disabled={loading || demandes.length === 0}
+          className="flex items-center gap-2 rounded-md border border-csm-gris-clair px-3 py-2 text-sm text-csm-gris transition-colors hover:bg-csm-blanc hover:border-csm-gris disabled:cursor-not-allowed disabled:opacity-50"
+          title="Exporter (complet) : + Entreprise, Prénom/Nom N+1 et E-mail N+1"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -921,6 +963,19 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                         <span className="block sm:hidden text-xs text-csm-gris mt-0.5">
                           {d.email}
                         </span>
+                        {(d.prenomNplus1 || d.nomNplus1 || d.emailNplus1) && (
+                          <span className="block text-xs text-csm-gris mt-0.5">
+                            N+1 :{" "}
+                            {[
+                              [formatPrenom(d.prenomNplus1 ?? ""), formatNom(d.nomNplus1 ?? "")]
+                                .filter(Boolean)
+                                .join(" "),
+                              d.emailNplus1 ?? "",
+                            ]
+                              .filter(Boolean)
+                              .join(" — ")}
+                          </span>
+                        )}
                       </label>
                       <div className="hidden sm:block text-sm text-csm-bleu truncate">
                         {d.email}
@@ -1021,7 +1076,9 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="mx-4 w-full max-w-md rounded-xl bg-white shadow-2xl">
             <div className="border-b border-csm-gris-clair px-6 py-4">
-              <h3 className="text-lg font-semibold text-csm-bleu">Exporter en CSV</h3>
+              <h3 className="text-lg font-semibold text-csm-bleu">
+                {exportType === "full" ? "Export CSV (complet)" : "Export Hub"}
+              </h3>
             </div>
             <div className="px-6 py-4">
               <label className="block text-sm font-medium text-csm-bleu mb-2">
@@ -1038,7 +1095,9 @@ export default function CsmForm({ formationId, formationNom }: CsmFormProps) {
                 ))}
               </select>
               <p className="mt-2 text-xs text-csm-gris">
-                Colonnes exportées : Prénom, Nom, E-mail.
+                {exportType === "full"
+                  ? "Colonnes : Prénom, Nom, E-mail, Entreprise, Prénom N+1, Nom N+1, E-mail N+1."
+                  : "Colonnes : Prénom, Nom, E-mail."}
               </p>
             </div>
             <div className="flex items-center justify-end gap-3 border-t border-csm-gris-clair px-6 py-4">

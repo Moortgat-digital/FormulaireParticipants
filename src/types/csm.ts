@@ -9,6 +9,11 @@ export interface DemandeInscription {
   statut: string;
   soumisPar: string;
   createdTime: string;
+  // N+1 (facultatif) — non transmis au webhook n8n, utilisé pour l'affichage
+  // et l'export « complet ».
+  prenomNplus1?: string;
+  nomNplus1?: string;
+  emailNplus1?: string;
 }
 
 export interface CsmWebhookPayload {
